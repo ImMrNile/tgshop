@@ -1,0 +1,485 @@
+/* pages/admin/products/ProductForm.module.css */
+
+.formContainer {
+    background-color: white;
+    padding: 1.5rem;
+    /* p-6 */
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    /* shadow-md */
+}
+
+.formTitle {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: bold;
+    color: #1f2937;
+    /* text-gray-800 */
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+}
+
+.errorMessage {
+    background-color: #fee2e2;
+    /* bg-red-100 */
+    border: 1px solid #f87171;
+    /* border border-red-400 */
+    color: #b91c1c;
+    /* text-red-700 */
+    padding: 1rem;
+    /* px-4 py-3 */
+    border-radius: 0.25rem;
+    /* rounded */
+    position: relative;
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+
+/* Основная сетка формы */
+
+.mainFormGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    /* grid-cols-1 */
+    gap: 1rem;
+    /* gap-4 */
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+}
+
+@media (min-width: 768px) {
+    /* md:grid-cols-2 */
+    .mainFormGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.formGroup {
+    /* Default div styles */
+}
+
+.label {
+    display: block;
+    color: #374151;
+    /* text-gray-700 */
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+}
+
+.input,
+.textarea,
+.select {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    /* shadow */
+    appearance: none;
+    border: 1px solid #d1d5db;
+    /* border */
+    border-radius: 0.25rem;
+    /* rounded */
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    /* py-2 px-3 */
+    color: #374151;
+    /* text-gray-700 */
+    line-height: 1.25;
+    /* leading-tight */
+    outline: none;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+    /* focus:shadow-outline */
+}
+
+.textarea {
+    resize: vertical;
+    /* Allow vertical resizing */
+}
+
+
+/* Секции для медиа и вариантов */
+
+.sectionTitle {
+    font-size: 1.25rem;
+    /* text-xl */
+    font-weight: bold;
+    color: #1f2937;
+    /* text-gray-800 */
+    margin-top: 1.5rem;
+    /* mt-6 */
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+
+/* Существующие медиа-файлы (изображения/видео) */
+
+.existingMediaGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    /* grid-cols-2 sm:grid-cols-3 md:grid-cols-4 */
+    gap: 1rem;
+    /* gap-4 */
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+}
+
+.existingMediaItem {
+    position: relative;
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.existingMediaItem img,
+.existingMediaItem video {
+    width: 100%;
+    height: 6rem;
+    /* h-24 */
+    object-fit: cover;
+    display: block;
+}
+
+.removeMediaButton {
+    position: absolute;
+    top: 0.25rem;
+    /* top-1 */
+    right: 0.25rem;
+    /* right-1 */
+    background-color: #ef4444;
+    /* bg-red-500 */
+    color: white;
+    border-radius: 9999px;
+    /* rounded-full */
+    padding: 0.25rem;
+    /* p-1 */
+    font-size: 0.75rem;
+    /* text-xs */
+    opacity: 0;
+    /* opacity-0 */
+    pointer-events: none;
+    /* чтобы не блокировать события под ним */
+    transition: opacity 0.2s ease-in-out;
+    border: none;
+    cursor: pointer;
+}
+
+.existingMediaItem:hover .removeMediaButton {
+    opacity: 1;
+    /* group-hover:opacity-100 */
+    pointer-events: auto;
+}
+
+
+/* Загрузка новых файлов (input type="file") */
+
+.fileUploadGroup {
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+}
+
+.fileInputLabel {
+    display: block;
+    color: #374151;
+    /* text-gray-700 */
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+}
+
+.fileInput {
+    display: block;
+    /* block */
+    width: 100%;
+    /* w-full */
+    font-size: 0.875rem;
+    /* text-sm */
+    color: #4b5563;
+    /* text-gray-500 */
+}
+
+
+/* Стилизация внутренних частей input type="file" (псевдоэлементы) */
+
+.fileInput::-webkit-file-upload-button {
+    margin-right: 1rem;
+    /* file:mr-4 */
+    padding: 0.5rem 1rem;
+    /* file:py-2 file:px-4 */
+    border-radius: 9999px;
+    /* file:rounded-full */
+    border: 0;
+    /* file:border-0 */
+    font-size: 0.875rem;
+    /* file:text-sm */
+    font-weight: 600;
+    /* file:font-semibold */
+    background-color: #eff6ff;
+    /* file:bg-blue-50 */
+    color: #2563eb;
+    /* file:text-blue-700 */
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.fileInput::file-selector-button {
+    /* Стандартный синтаксис */
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background-color: #eff6ff;
+    color: #2563eb;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.fileInput::-webkit-file-upload-button:hover,
+.fileInput::file-selector-button:hover {
+    background-color: #dbeafe;
+    /* hover:file:bg-blue-100 */
+}
+
+
+/* Добавление новых изображений/видео (кнопки) */
+
+.addMediaButton {
+    background-color: #3b82f6;
+    /* bg-blue-500 */
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    /* py-2 px-4 */
+    border-radius: 0.25rem;
+    /* rounded */
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+    font-size: 0.875rem;
+    /* text-sm */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.addMediaButton:hover {
+    background-color: #2563eb;
+    /* hover:bg-blue-600 */
+}
+
+
+/* Размеры, цвета и остатки (варианты) */
+
+.variantListContainer {
+    margin-top: 1.5rem;
+    /* mt-6 */
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+.variantItem {
+    display: flex;
+    flex-wrap: wrap;
+    /* flex-wrap */
+    align-items: flex-end;
+    /* items-end */
+    gap: 0.5rem;
+    /* gap-2 */
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+    padding: 0.75rem;
+    /* p-3 */
+    border: 1px solid #e5e7eb;
+    /* border border-gray-200 */
+    border-radius: 0.375rem;
+    /* rounded-md */
+}
+
+.variantInputGroup {
+    flex: 1;
+    min-width: 6.25rem;
+    /* min-w-[100px] */
+}
+
+@media (min-width: 768px) {
+    /* md:min-w-[120px/150px] */
+    .variantInputGroup.color {
+        min-width: 7.5rem;
+        /* 120px */
+    }
+    .variantInputGroup.size {
+        min-width: 9.375rem;
+        /* 150px */
+    }
+    .variantInputGroup.stock {
+        min-width: 6.25rem;
+        /* 100px */
+    }
+}
+
+.removeVariantButton {
+    background-color: #ef4444;
+    /* bg-red-500 */
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 0.75rem;
+    /* py-2 px-3 */
+    border-radius: 0.25rem;
+    /* rounded */
+    align-self: flex-end;
+    /* self-end */
+    font-size: 0.875rem;
+    /* text-sm */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.removeVariantButton:hover {
+    background-color: #b91c1c;
+    /* hover:bg-red-600 */
+}
+
+
+/* Кнопка "Создать/Обновить товар" */
+
+.submitButtonContainer {
+    display: flex;
+    justify-content: flex-end;
+    /* justify-end */
+    margin-top: 2rem;
+    /* mt-8 */
+}
+
+.submitButton {
+    background-color: #4f46e5;
+    /* bg-indigo-600 */
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1.5rem;
+    /* py-2 px-6 */
+    border-radius: 0.25rem;
+    /* rounded */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+    /* focus:shadow-outline */
+    font-size: 1.125rem;
+    /* text-lg */
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.submitButton:hover {
+    background-color: #4338ca;
+    /* hover:bg-indigo-700 */
+}
+
+.submitButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.buttonIcon,
+.fileInputIcon {
+    margin-right: 0.5rem;
+    /* Отступ справа от иконки */
+    vertical-align: middle;
+    /* Выравнивание иконки по центру текста */
+}
+
+
+/* Стили для кнопки удаления существующего медиа */
+
+.removeMediaButtonIcon {
+    width: 1rem;
+    /* w-4 */
+    height: 1rem;
+    /* h-4 */
+}
+
+
+/* Стили для списка выбранных файлов (до загрузки) */
+
+.selectedFilesList {
+    list-style: none;
+    /* Убрать маркеры */
+    padding: 0;
+    margin-top: 0.5rem;
+    background-color: #f9fafb;
+    /* bg-gray-50 */
+    border-radius: 0.25rem;
+    border: 1px solid #e5e7eb;
+}
+
+.selectedFileItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 0.875rem;
+    color: #374151;
+}
+
+.selectedFileItem:last-child {
+    border-bottom: none;
+}
+
+.removeSelectedFileButton {
+    background: none;
+    border: none;
+    color: #ef4444;
+    /* text-red-500 */
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.removeSelectedFileButton:hover {
+    color: #b91c1c;
+    /* hover:text-red-700 */
+}
+
+.removeSelectedFileButtonIcon {
+    width: 1rem;
+    height: 1rem;
+    vertical-align: middle;
+}
+
+
+/* Стили для иконки удаления варианта */
+
+.removeVariantButtonIcon {
+    width: 1rem;
+    /* w-4 */
+    height: 1rem;
+    /* h-4 */
+}
+
+
+/* Обновите стили для existingMediaItem, чтобы картинки корректно отображались */
+
+.existingMediaItem img,
+.existingMediaItem video,
+.existingMediaItem .existingMediaThumbnail {
+    /* Добавляем класс для img/video */
+    width: 100%;
+    height: 6rem;
+    /* h-24 */
+    object-fit: cover;
+    display: block;
+    border-radius: 0.5rem;
+    /* rounded-lg */
+}

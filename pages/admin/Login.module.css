@@ -1,0 +1,114 @@
+/* pages/admin/Login.module.css */
+
+.loginContainer {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f3f4f6;
+    /* bg-gray-100 */
+    padding: 1rem;
+    /* p-4 */
+}
+
+.loginBox {
+    background-color: white;
+    padding: 2rem;
+    /* p-8 */
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    /* shadow-xl */
+    width: 100%;
+    max-width: 28rem;
+    /* max-w-md */
+}
+
+.loginTitle {
+    font-size: 1.875rem;
+    /* text-3xl */
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+    color: #1f2937;
+    /* text-gray-800 */
+}
+
+.formGroup {
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+.label {
+    display: block;
+    color: #374151;
+    /* text-gray-700 */
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+}
+
+.input {
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    /* shadow */
+    appearance: none;
+    border: 1px solid #d1d5db;
+    /* border */
+    border-radius: 0.25rem;
+    /* rounded */
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    /* py-2 px-3 */
+    color: #374151;
+    /* text-gray-700 */
+    line-height: 1.25;
+    /* leading-tight */
+    outline: none;
+}
+
+.input:focus {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+    /* focus:shadow-outline */
+}
+
+.errorText {
+    color: #ef4444;
+    /* text-red-500 */
+    font-size: 0.75rem;
+    /* text-xs */
+    font-style: italic;
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+.buttonGroup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.submitButton {
+    background-color: #4f46e5;
+    /* bg-indigo-600 */
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    /* py-2 px-4 */
+    border-radius: 0.25rem;
+    /* rounded */
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.5);
+    /* focus:shadow-outline */
+    width: 100%;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.submitButton:hover {
+    background-color: #4338ca;
+    /* hover:bg-indigo-700 */
+}

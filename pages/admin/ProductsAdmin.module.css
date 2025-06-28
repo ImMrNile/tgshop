@@ -1,0 +1,376 @@
+/* pages/admin/products/ProductsAdmin.module.css */
+
+
+/* Общие стили для контейнера страницы */
+
+.pageContainer {
+    background-color: white;
+    padding: 1.5rem;
+    /* p-6 */
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    /* shadow-md */
+}
+
+
+/* Заголовок и кнопка "Добавить товар" */
+
+.headerWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    /* mb-6 */
+    flex-wrap: wrap;
+    /* flex-wrap */
+    gap: 1rem;
+    /* gap-4 */
+}
+
+.pageTitle {
+    font-size: 1.5rem;
+    /* text-2xl */
+    font-weight: bold;
+    color: #1f2937;
+    /* text-gray-800 */
+}
+
+.addButton {
+    background-color: #10b981;
+    /* bg-green-600 */
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    /* py-2 px-4 */
+    border-radius: 0.25rem;
+    /* rounded */
+    transition: background-color 0.3s ease-in-out;
+    white-space: nowrap;
+    /* whitespace-nowrap */
+    text-decoration: none;
+    /* Link */
+}
+
+.addButton:hover {
+    background-color: #059669;
+    /* hover:bg-green-700 */
+}
+
+
+/* Сообщение "Пока нет товаров" */
+
+.noProductsMessage {
+    text-align: center;
+    color: #4b5563;
+    /* text-gray-600 */
+    font-size: 1.125rem;
+    /* text-xl */
+}
+
+
+/* Таблица для десктопов */
+
+.tableContainer {
+    overflow-x: auto;
+    /* hidden md:block */
+    display: none;
+    /* Скрываем по умолчанию для мобильных */
+}
+
+@media (min-width: 768px) {
+    /* md:block */
+    .tableContainer {
+        display: block;
+    }
+}
+
+.productTable {
+    min-width: 100%;
+    /* min-w-full */
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    /* border border-gray-200 */
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    border-collapse: collapse;
+    /* Чтобы границы ячеек были правильными */
+}
+
+.tableHead {
+    background-color: #f9fafb;
+    /* bg-gray-50 */
+}
+
+.tableHeader {
+    padding: 0.75rem 1rem;
+    /* py-3 px-4 */
+    text-align: left;
+    font-size: 0.75rem;
+    /* text-xs */
+    font-weight: 500;
+    /* font-medium */
+    color: #6b7280;
+    /* text-gray-500 */
+    text-transform: uppercase;
+    /* uppercase */
+    letter-spacing: 0.05em;
+    /* tracking-wider */
+}
+
+.tableBodyRow {
+    border-bottom: 1px solid #e5e7eb;
+    /* divide-y divide-gray-200 */
+}
+
+.tableBodyRow:last-child {
+    border-bottom: none;
+    /* Убрать нижнюю границу у последней строки */
+}
+
+.tableCell {
+    padding: 0.75rem 1rem;
+    /* py-3 px-4 */
+    white-space: nowrap;
+    /* whitespace-nowrap */
+    font-size: 0.875rem;
+    /* text-sm */
+    color: #1f2937;
+    /* text-gray-900 (для названия) */
+}
+
+.tableCell.image {
+    /* No specific styles needed beyond default */
+}
+
+.tableCell.textSecondary {
+    color: #4b5563;
+    /* text-gray-500 */
+}
+
+.tableCell.variants {
+    /* No specific styles needed */
+}
+
+.tableCell.actions {
+    /* No specific styles needed */
+}
+
+.productImage {
+    width: 4rem;
+    /* w-16 */
+    height: 4rem;
+    /* h-16 */
+    object-fit: cover;
+    border-radius: 0.375rem;
+    /* rounded-md */
+}
+
+.noImagePlaceholder {
+    width: 4rem;
+    height: 4rem;
+    background-color: #e5e7eb;
+    /* bg-gray-200 */
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    /* text-gray-500 */
+    font-size: 0.75rem;
+    /* text-xs */
+}
+
+.actionButton {
+    font-weight: 500;
+    /* font-medium */
+    text-decoration: none;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.editButton {
+    color: #4f46e5;
+    /* text-indigo-600 */
+    margin-right: 0.75rem;
+    /* mr-3 */
+}
+
+.editButton:hover {
+    color: #3730a3;
+    /* hover:text-indigo-900 */
+}
+
+.deleteButton {
+    color: #ef4444;
+    /* text-red-600 */
+}
+
+.deleteButton:hover {
+    color: #b91c1c;
+    /* hover:text-red-900 */
+}
+
+
+/* Карточки для мобильных устройств */
+
+.cardsContainer {
+    /* md:hidden */
+    display: grid;
+    grid-template-columns: 1fr;
+    /* grid-cols-1 */
+    gap: 1rem;
+    /* gap-4 */
+}
+
+@media (min-width: 640px) {
+    /* sm:grid-cols-2 */
+    .cardsContainer {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    /* md:hidden */
+    .cardsContainer {
+        display: none;
+        /* Скрываем карточки на десктопе, показываем таблицу */
+    }
+}
+
+.productCard {
+    background-color: white;
+    border-radius: 0.5rem;
+    /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    /* shadow-md */
+    padding: 1rem;
+    /* p-4 */
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    /* mb-4 */
+}
+
+.cardImage {
+    width: 5rem;
+    /* w-20 */
+    height: 5rem;
+    /* h-20 */
+    object-fit: cover;
+    border-radius: 0.375rem;
+    /* rounded-md */
+    margin-right: 1rem;
+    /* mr-4 */
+}
+
+.cardInfo {
+    /* Flex item */
+}
+
+.cardTitle {
+    font-size: 1.125rem;
+    /* text-lg */
+    font-weight: 600;
+    /* font-semibold */
+    color: #1f2937;
+    /* text-gray-900 */
+}
+
+.cardCategory {
+    font-size: 0.875rem;
+    /* text-sm */
+    color: #4b5563;
+    /* text-gray-600 */
+}
+
+.cardDetails {
+    font-size: 0.875rem;
+    /* text-sm */
+    color: #374151;
+    /* text-gray-700 */
+    margin-bottom: 0.5rem;
+    /* mb-2 */
+}
+
+.cardPrice {
+    font-weight: 500;
+    /* font-medium */
+}
+
+.cardVariantsList {
+    list-style: disc;
+    /* list-disc */
+    padding-left: 1.25rem;
+    /* pl-5, list-inside ml-2 */
+    margin-left: 0.5rem;
+    /* ml-2 from list-inside */
+}
+
+.cardVariantItem {
+    color: #4b5563;
+    /* text-gray-600 */
+}
+
+.cardActions {
+    display: flex;
+    justify-content: flex-end;
+    /* justify-end */
+    gap: 0.5rem;
+    /* gap-2 */
+    margin-top: 1rem;
+    /* mt-4 */
+}
+
+.cardActionButton {
+    font-size: 0.875rem;
+    /* text-sm */
+    font-weight: 500;
+    /* font-medium */
+    text-decoration: none;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+}
+
+.cardEditButton {
+    color: #4f46e5;
+    /* text-indigo-600 */
+}
+
+.cardEditButton:hover {
+    color: #3730a3;
+    /* hover:text-indigo-900 */
+}
+
+.cardDeleteButton {
+    color: #ef4444;
+    /* text-red-600 */
+}
+
+.cardDeleteButton:hover {
+    color: #b91c1c;
+    /* hover:text-red-900 */
+}
+
+.buttonIcon {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.buttonIconSmall {
+    /* Для кнопок "редактировать/удалить" в таблице/карточках */
+    width: 0.875rem;
+    /* ~14px */
+    height: 0.875rem;
+    margin-right: 0.25rem;
+    vertical-align: middle;
+}

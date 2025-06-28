@@ -1,0 +1,523 @@
+/* styles/HomePage.module.css */
+
+.container {
+    min-height: 100vh;
+    background-color: #f9fafb;
+    /* bg-gray-50 */
+    color: #1f2937;
+    /* text-gray-800 */
+}
+
+
+/* Hero Section - Сделаем более компактной и уместной для Mini App */
+
+.hero {
+    /* background-image: url('/hero-bg.jpg'); */
+    /* Можно удалить, если нужен чистый цвет */
+    background-color: #f0f0f0;
+    /* Легкий фон, если нет картинки */
+    background-size: cover;
+    background-position: center;
+    height: 12rem;
+    /* Уменьшаем высоту для более компактного вида на мобилках */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #1f2937;
+    /* Цвет текста для светлого фона */
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Легкая тень */
+}
+
+.hero::before {
+    /* Удаляем затемнение, если фон светлый */
+    content: none;
+    /* Убираем псевдоэлемент, если не нужен overlay */
+}
+
+.heroContent {
+    position: relative;
+    z-index: 2;
+    padding: 0.5rem;
+    /* Меньше padding */
+    max-width: 800px;
+}
+
+.heroTitle {
+    font-size: 1.8rem;
+    /* Уменьшаем размер заголовка */
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    /* Меньше отступ */
+    color: #4f46e5;
+    /* Акцентный цвет */
+    text-shadow: none;
+    /* Убираем тень, если фон светлый */
+}
+
+@media (min-width: 768px) {
+    .heroTitle {
+        font-size: 2.5rem;
+        /* md:text-5xl */
+    }
+}
+
+.heroSubtitle {
+    font-size: 0.9rem;
+    /* Уменьшаем размер подзаголовка */
+    margin-bottom: 1rem;
+    /* Меньше отступ */
+    opacity: 0.9;
+    color: #555;
+}
+
+@media (min-width: 768px) {
+    .heroSubtitle {
+        font-size: 1.125rem;
+        /* md:text-xl */
+    }
+}
+
+.heroButton {
+    display: inline-flex;
+    align-items: center;
+    background-color: #4f46e5;
+    /* bg-indigo-600 */
+    color: white;
+    padding: 0.5rem 1rem;
+    /* Меньше padding */
+    border-radius: 0.375rem;
+    /* rounded-md */
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.3s ease-in-out, transform 0.3s ease-in-out;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    /* Легкая тень */
+    font-size: 0.9rem;
+    /* Меньше шрифт кнопки */
+}
+
+.heroButton:hover {
+    background-color: #4338ca;
+    transform: translateY(-1px);
+}
+
+.buttonIcon {
+    margin-left: 0.4rem;
+}
+
+
+/* Features Section - ПОЛНОСТЬЮ УДАЛЕНА ИЗ HTML, поэтому стили не нужны */
+
+
+/* Product Collection Section - Теперь это основная секция */
+
+.collectionSection {
+    padding: 1rem;
+    /* Меньше padding */
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .collectionSection {
+        padding: 1.5rem;
+    }
+}
+
+.collectionTitle {
+    font-size: 1.5rem;
+    /* text-3xl */
+    font-weight: bold;
+    color: #1f2937;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    /* Меньше отступ */
+    position: relative;
+}
+
+.collectionTitle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -5px;
+    /* Выше подчеркивание */
+    transform: translateX(-50%);
+    width: 40px;
+    /* Короче подчеркивание */
+    height: 3px;
+    background-color: #4f46e5;
+    border-radius: 2px;
+}
+
+.loadingText,
+.errorText,
+.noProductsText {
+    text-align: center;
+    font-size: 1rem;
+    /* Меньше шрифт */
+    color: #6b7280;
+    margin-top: 1rem;
+}
+
+.errorText {
+    color: #ef4444;
+}
+
+.productGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    /* ИЗМЕНЕНО: Сразу 2 колонки на мобилках */
+    gap: 0.75rem;
+    /* Меньше gap */
+}
+
+@media (min-width: 640px) {
+    /* sm:grid-cols-2 */
+    .productGrid {
+        grid-template-columns: repeat(2, 1fr);
+        /* Можно оставить, или 3 колонки для sm */
+    }
+}
+
+@media (min-width: 768px) {
+    /* md:grid-cols-3 */
+    .productGrid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        /* Обычный gap для десктопа */
+    }
+}
+
+@media (min-width: 1024px) {
+    /* lg:grid-cols-4 */
+    .productGrid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+
+/* Product Card */
+
+.productCard {
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+    border-radius: 0.5rem;
+    /* Меньше закругление */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Меньше тень */
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    /* Быстрее анимация */
+}
+
+.productCard:hover {
+    transform: translateY(-3px);
+    /* Меньше подъем */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    /* Меньше тень при наведении */
+}
+
+.productImageContainer {
+    width: 100%;
+    padding-bottom: 75%;
+    /* h-48 -> Aspect ratio 4:3 */
+    overflow: hidden;
+    position: relative;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.productImage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.2s ease-in-out;
+}
+
+.productCard:hover .productImage {
+    transform: scale(1.03);
+    /* Меньше увеличение */
+}
+
+.productName {
+    font-size: 1rem;
+    /* Меньше шрифт */
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0.75rem 0.75rem 0.25rem 0.75rem;
+    /* Меньше отступы */
+    min-height: 2.5rem;
+    /* Немного меньше высота */
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Ограничить 2 строками */
+    -webkit-box-orient: vertical;
+}
+
+.productPrice {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    margin-bottom: 0.75rem;
+    /* Меньше отступ */
+}
+
+.currentPrice {
+    font-size: 1.1rem;
+    /* Меньше шрифт */
+    font-weight: bold;
+    color: #4f46e5;
+    margin-right: 0.4rem;
+}
+
+
+/* Поиск и Фильтры */
+
+.filtersSection {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    margin-bottom: 2rem;
+}
+
+.searchBar {
+    display: flex;
+    margin-bottom: 1rem;
+    position: relative;
+    /* Для иконки поиска */
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    /* Отступ для иконки */
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    color: #333;
+    outline: none;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.searchInput:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.searchIcon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 1.1rem;
+    z-index: 5;
+}
+
+.filtersGrid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+@media (min-width: 640px) {
+    /* sm breakpoint */
+    .filtersGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 768px) {
+    /* md breakpoint */
+    .filtersGrid {
+        grid-template-columns: repeat(3, 1fr);
+        /* 3 колонки на десктопе */
+    }
+}
+
+.filterSelect {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    color: #333;
+    outline: none;
+    background-color: white;
+    appearance: none;
+    /* Убрать стандартную стрелку */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd' /%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1em;
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.filterSelect:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+.filterButton {
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* На мобилке кнопки во всю ширину */
+}
+
+.filterButton:hover {
+    background-color: #4338ca;
+    transform: translateY(-1px);
+}
+
+.filterButtonIcon {
+    margin-right: 0.5rem;
+}
+
+.productBrand {
+    font-size: 0.8rem;
+    /* text-xs */
+    color: #888;
+    text-align: center;
+    margin-top: -0.25rem;
+    /* Немного приподнять, чтобы было ближе к названию */
+    margin-bottom: 0.5rem;
+}
+
+
+/* ... */
+
+
+/* Кнопка сброса фильтров */
+
+.resetButton {
+    background-color: #999;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.resetButton:hover {
+    background-color: #777;
+    transform: translateY(-1px);
+}
+
+.resetButtonIcon {
+    margin-right: 0.5rem;
+}
+
+
+/* Контейнер кнопок фильтрации */
+
+.filterButtonsContainer {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+    .filterButtonsContainer {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.oldPrice {
+    font-size: 0.8rem;
+    /* Меньше шрифт */
+    color: #6b7280;
+    text-decoration: line-through;
+}
+
+.addToCartButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% - 1.5rem);
+    /* Full width minus padding */
+    margin: 0 0.75rem 0.75rem 0.75rem;
+    /* Меньше отступы */
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    /* Меньше padding */
+    border-radius: 0.25rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+    font-size: 0.9rem;
+    /* Меньше шрифт */
+}
+
+.addToCartButton:hover {
+    background-color: #4338ca;
+    transform: translateY(-1px);
+}
+
+.addToCartButton .buttonIcon {
+    margin-left: 0.4rem;
+}
+
+
+/* Footer - Компактный */
+
+.footer {
+    background-color: #1f2937;
+    color: white;
+    text-align: center;
+    padding: 1rem;
+    /* Меньше padding */
+    margin-top: 1rem;
+    /* Меньше отступ */
+    font-size: 0.8rem;
+}
+
+.footerLinks {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    /* Меньше gap */
+    margin-top: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.footerLink {
+    color: white;
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.footerLink:hover {
+    color: #d1d5db;
+}
