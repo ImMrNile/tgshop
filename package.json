@@ -1,0 +1,32 @@
+{
+    "name": "telegram-elite-app",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint"
+    },
+    "dependencies": {
+        "@prisma/client": "^6.10.1",
+        "cloudinary": "^1.41.0",
+        "next": "15.3.4",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-icon": "^1.0.0",
+        "react-icons": "^4.12.0",
+        "ts-node": "^10.9.2"
+    },
+    "devDependencies": {
+        "@eslint/eslintrc": "^3.0.0",
+        "@types/busboy": "^1.5.3",
+        "@types/node": "^20.14.9",
+        "@types/react": "^18.3.3",
+        "@types/react-dom": "^18.3.0",
+        "busboy": "^1.6.0",
+        "eslint": "^9.0.0",
+        "eslint-config-next": "15.3.4",
+        "typescript": "^5.5.3"
+    }
+}

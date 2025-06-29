@@ -1,10 +1,11 @@
-// pages/products/[id].tsx
+// pages/products/[id].tsx - ОБНОВЛЕННАЯ ВЕРСИЯ
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import styles from './ProductDetail.module.css';
+import styles from '../../styles/ProductDetail.module.css';
 import { getBrandLogoUrl } from '../../lib/brandLogos';
+import { useApp } from '../../contexts/AppContext';
 
 // Импорты иконок
 import { 
@@ -46,12 +47,18 @@ interface Product {
 export default function ProductDetailPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { 
+    addToCart, 
+    isInFavorites, 
+    toggleFavorite,
+    state 
+  } = useApp();
+  
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -87,17 +94,27 @@ export default function ProductDetailPage() {
       return;
     }
     
+    if (selectedVariant.stock === 0) {
+      alert('Выбранный размер/цвет отсутствует на складе.');
+      return;
+    }
+    
     setAddingToCart(true);
     
-    // Имитация добавления в корзину
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setAddingToCart(false);
-    setShowSuccess(true);
-    
-    setTimeout(() => setShowSuccess(false), 3000);
-    
-    console.log(`Добавлен в корзину: ${product.name}, Размер: ${selectedVariant.size}, Цвет: ${selectedVariant.color}`);
+    try {
+      // Имитация добавления в корзину
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      addToCart(product, selectedVariant, 1);
+      
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+    } catch (error) {
+      alert('Ошибка при добавлении в корзину');
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   const goToNextImage = () => {
@@ -125,6 +142,12 @@ export default function ProductDetailPage() {
       // Fallback - копировать ссылку
       navigator.clipboard.writeText(window.location.href);
       alert('Ссылка скопирована в буфер обмена!');
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    if (product) {
+      toggleFavorite(product);
     }
   };
 
@@ -170,6 +193,8 @@ export default function ProductDetailPage() {
   const discountPercent = product.oldPrice && parseFloat(product.oldPrice) > parseFloat(product.currentPrice) 
     ? Math.round((1 - parseFloat(product.currentPrice) / parseFloat(product.oldPrice)) * 100)
     : 0;
+  
+  const isLiked = isInFavorites(product.id);
 
   return (
     <div className={styles.pageContainer}>
@@ -185,7 +210,7 @@ export default function ProductDetailPage() {
         </button>
         <div className={styles.headerActions}>
           <button 
-            onClick={() => setIsLiked(!isLiked)} 
+            onClick={handleToggleFavorite} 
             className={`${styles.actionButton} ${isLiked ? styles.liked : ''}`}
           >
             <FaHeart />
@@ -193,6 +218,28 @@ export default function ProductDetailPage() {
           <button onClick={handleShare} className={styles.actionButton}>
             <FaShare />
           </button>
+          <Link href="/cart" className={styles.actionButton} style={{ position: 'relative' }}>
+            <FaShoppingCart />
+            {state.cartCount > 0 && (
+              <span style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '-5px',
+                background: '#ef4444',
+                color: 'white',
+                borderRadius: '50%',
+                width: '20px',
+                height: '20px',
+                fontSize: '0.75rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold'
+              }}>
+                {state.cartCount}
+              </span>
+            )}
+          </Link>
         </div>
       </header>
 
