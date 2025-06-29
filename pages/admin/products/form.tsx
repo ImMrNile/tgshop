@@ -18,7 +18,7 @@ interface ProductVariantForm {
 interface ProductFormState {
   id?: string;
   name: string;
-   brand: string; 
+  brand: string; 
   description: string;
   composition: string;
   careInstructions: string;
@@ -36,6 +36,7 @@ interface ProductFormState {
 const categories = ['ОДЕЖДА', 'ОБУВЬ', 'АКСЕССУАРЫ'];
 const seasons = ['ВЕСНА', 'ЛЕТО', 'ОСЕНЬ', 'ЗИМА', 'ВСЕСЕЗОННЫЙ'];
 const genders = ['МУЖСКОЙ', 'ЖЕНСКИЙ', 'УНИСЕКС'];
+
 export default function ProductFormPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -45,7 +46,7 @@ export default function ProductFormPage() {
     description: '',
     composition: '',
     careInstructions: '',
-      brand: '',
+    brand: '',
     category: categories[0],
     season: seasons[0],
     gender: genders[0],
@@ -156,8 +157,14 @@ export default function ProductFormPage() {
         return;
     }
 
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('Form data:', formData);
+    console.log('New image files:', newImageFiles);
+    console.log('New video files:', newVideoFiles);
+
     const dataToSend = new FormData();
 
+    // Добавляем все поля формы кроме массивов
     Object.keys(formData).forEach(key => {
       if (key !== 'images' && key !== 'videos' && key !== 'variants') {
         const value = (formData as any)[key];
@@ -165,19 +172,43 @@ export default function ProductFormPage() {
       }
     });
 
-    formData.images.forEach(url => dataToSend.append('existingImages[]', url));
-    formData.videos.forEach(url => dataToSend.append('existingVideos[]', url));
+    // Добавляем существующие URL-ы медиа как массивы
+    formData.images.forEach(url => {
+      dataToSend.append('existingImages[]', url);
+    });
+    formData.videos.forEach(url => {
+      dataToSend.append('existingVideos[]', url);
+    });
 
-    // Добавляем НОВЫЕ ФАЙЛЫ
-    newImageFiles.forEach(file => dataToSend.append('images', file));
-    newVideoFiles.forEach(file => dataToSend.append('videos', file));
+    // ИСПРАВЛЕНИЕ: Добавляем НОВЫЕ ФАЙЛЫ правильно
+    newImageFiles.forEach(file => {
+      console.log('Adding image file to FormData:', file.name, file.size, file.type);
+      dataToSend.append('images', file);
+    });
+    
+    newVideoFiles.forEach(file => {
+      console.log('Adding video file to FormData:', file.name, file.size, file.type);
+      dataToSend.append('videos', file);
+    });
 
+    // Добавляем варианты
     dataToSend.append('variants', JSON.stringify(formData.variants));
+
+    // Логируем содержимое FormData
+    console.log('=== FormData Contents ===');
+    for (let [key, value] of dataToSend.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
 
     const url = id ? `/api/admin/products/${id}` : '/api/admin/products';
     const method = id ? 'PUT' : 'POST';
 
     try {
+      console.log(`Making ${method} request to ${url}`);
       const res = await fetch(url, {
         method,
         body: dataToSend,
@@ -215,9 +246,9 @@ export default function ProductFormPage() {
               <input type="text" id="name" name="name" value={formData.name} onChange={handleChange} className={styles.input} required />
             </div>
             <div className={styles.formGroup}>
-  <label htmlFor="brand" className={styles.label}>Бренд</label>
-  <input type="text" id="brand" name="brand" value={formData.brand} onChange={handleChange} className={styles.input} />
-</div>
+              <label htmlFor="brand" className={styles.label}>Бренд</label>
+              <input type="text" id="brand" name="brand" value={formData.brand} onChange={handleChange} className={styles.input} />
+            </div>
             <div className={styles.formGroup}>
               <label htmlFor="description" className={styles.label}>Описание</label>
               <textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} className={styles.textarea}></textarea>
@@ -276,7 +307,7 @@ export default function ProductFormPage() {
                       className={styles.removeMediaButton}
                       title="Удалить это изображение"
                     >
-                      <FaTrashAlt className={styles.removeMediaButtonIcon} /> {/* Иконка */}
+                      <FaTrashAlt className={styles.removeMediaButtonIcon} />
                     </button>
                   </div>
                 ))}
@@ -302,9 +333,9 @@ export default function ProductFormPage() {
               <ul className={styles.selectedFilesList}>
                 {newImageFiles.map((file, index) => (
                   <li key={index} className={styles.selectedFileItem}>
-                    <span>{file.name}</span>
+                    <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                     <button type="button" onClick={() => handleRemoveNewFile(file, 'image')} className={styles.removeSelectedFileButton}>
-                      <FaTimes className={styles.removeSelectedFileButtonIcon} /> {/* Иконка */}
+                      <FaTimes className={styles.removeSelectedFileButtonIcon} />
                     </button>
                   </li>
                 ))}
@@ -326,15 +357,17 @@ export default function ProductFormPage() {
                       className={styles.removeMediaButton}
                       title="Удалить это видео"
                     >
-                      <FaTrashAlt className={styles.removeMediaButtonIcon} /> {/* Иконка */}
+                      <FaTrashAlt className={styles.removeMediaButtonIcon} />
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )
+          </div>
 
-          {/* Загрузка новых видео */}
+            )}
+    
+            {/* Загрузка новых видео */}
           <div className={styles.fileUploadGroup}>
             <h3 className={styles.sectionTitle}>Загрузить новые видео</h3>
             <label htmlFor="video-upload" className={styles.fileInputLabel}>
@@ -352,9 +385,9 @@ export default function ProductFormPage() {
               <ul className={styles.selectedFilesList}>
                 {newVideoFiles.map((file, index) => (
                   <li key={index} className={styles.selectedFileItem}>
-                    <span>{file.name}</span>
+                    <span>{file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                     <button type="button" onClick={() => handleRemoveNewFile(file, 'video')} className={styles.removeSelectedFileButton}>
-                      <FaTimes className={styles.removeSelectedFileButtonIcon} /> {/* Иконка */}
+                      <FaTimes className={styles.removeSelectedFileButtonIcon} />
                     </button>
                   </li>
                 ))}
@@ -380,7 +413,7 @@ export default function ProductFormPage() {
                   <input type="number" id={`stock-${index}`} value={variant.stock} onChange={(e) => handleVariantChange(index, 'stock', parseInt(e.target.value) || 0)} className={styles.input} min="0" required />
                 </div>
                 <button type="button" onClick={() => removeVariantField(index)} className={styles.removeVariantButton}>
-                  <FaTrashAlt className={styles.removeVariantButtonIcon} /> {/* Иконка */}
+                  <FaTrashAlt className={styles.removeVariantButtonIcon} />
                 </button>
               </div>
             ))}
