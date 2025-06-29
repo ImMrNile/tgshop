@@ -1,15 +1,13 @@
-
 // pages/cart.tsx
-import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 import styles from '../styles/Cart.module.css';
 import { useApp } from '../contexts/AppContext';
-import { 
-  FaArrowLeft, 
-  FaShoppingCart, 
-  FaTrashAlt, 
+import {
+  FaArrowLeft,
+  FaShoppingCart,
+  FaTrashAlt,
   FaHeart,
   FaPlus,
   FaMinus,
@@ -20,17 +18,15 @@ import {
 
 export default function CartPage() {
   const router = useRouter();
-  const { 
-    state, 
-    removeFromCart, 
-    updateCartQuantity, 
-    clearCart, 
+  const {
+    state,
+    removeFromCart,
+    updateCartQuantity,
+    clearCart,
     toggleFavorite,
     isInFavorites,
     getCartItemId
   } = useApp();
-  
-  const [loading, setLoading] = useState(false);
 
   // Функция для обновления количества товара
   const handleQuantityChange = (productId: string, variantId: string, newQuantity: number) => {
@@ -38,7 +34,6 @@ export default function CartPage() {
       handleRemoveItem(productId, variantId);
       return;
     }
-    
     updateCartQuantity(productId, variantId, newQuantity);
   };
 
@@ -56,16 +51,9 @@ export default function CartPage() {
     }
   };
 
-  // Функция для перехода к оформлению заказа
+  // --- ИЗМЕНЕНО: Функция для перехода к оформлению заказа ---
   const handleCheckout = () => {
-    setLoading(true);
-    // Здесь будет логика перехода к оформлению заказа
-    // Пока просто имитируем загрузку
-    setTimeout(() => {
-      setLoading(false);
-      alert('Функция оформления заказа будет реализована далее');
-      // router.push('/checkout');
-    }, 1000);
+    router.push('/checkout');
   };
 
   const { cart, cartTotal, cartCount } = state;
@@ -78,8 +66,6 @@ export default function CartPage() {
           <title>Корзина | Elite App</title>
           <meta name="description" content="Корзина покупок" />
         </Head>
-
-        {/* Шапка */}
         <header className={styles.header}>
           <button onClick={() => router.back()} className={styles.backButton}>
             <FaArrowLeft />
@@ -89,12 +75,9 @@ export default function CartPage() {
             Корзина
           </h1>
           <div className={styles.headerActions}>
-            {/* Пустой div для выравнивания */}
             <div></div>
           </div>
         </header>
-
-        {/* Пустое состояние */}
         <div className={styles.emptyState}>
           <FaShoppingCart className={styles.emptyIcon} />
           <h2 className={styles.emptyTitle}>Корзина пуста</h2>
@@ -116,8 +99,6 @@ export default function CartPage() {
         <title>Корзина ({cartCount}) | Elite App</title>
         <meta name="description" content="Корзина покупок" />
       </Head>
-
-      {/* Шапка */}
       <header className={styles.header}>
         <button onClick={() => router.back()} className={styles.backButton}>
           <FaArrowLeft />
@@ -127,7 +108,7 @@ export default function CartPage() {
           Корзина ({cartCount})
         </h1>
         <div className={styles.headerActions}>
-          <button 
+          <button
             onClick={handleClearCart}
             className={styles.actionButton}
             title="Очистить корзину"
@@ -138,7 +119,6 @@ export default function CartPage() {
       </header>
 
       <main className={styles.mainContainer}>
-        {/* Список товаров */}
         <div className={styles.itemsList}>
           {cart.map((item) => {
             const itemId = getCartItemId(item.product.id, item.variant.id);
@@ -150,11 +130,10 @@ export default function CartPage() {
             return (
               <div key={itemId} className={styles.itemCard}>
                 <div className={styles.itemContent}>
-                  {/* Изображение */}
                   <Link href={`/products/${item.product.id}`}>
                     {item.product.images && item.product.images.length > 0 ? (
-                      <img 
-                        src={item.product.images[0]} 
+                      <img
+                        src={item.product.images[0]}
                         alt={item.product.name}
                         className={styles.itemImage}
                       />
@@ -165,7 +144,6 @@ export default function CartPage() {
                     )}
                   </Link>
 
-                  {/* Информация о товаре */}
                   <div className={styles.itemInfo}>
                     <Link href={`/products/${item.product.id}`}>
                       <h3 className={styles.itemName}>{item.product.name}</h3>
@@ -189,7 +167,6 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  {/* Контролы количества */}
                   <div className={styles.quantityControls}>
                     <button
                       onClick={() => handleQuantityChange(item.product.id, item.variant.id, item.quantity - 1)}
@@ -208,7 +185,6 @@ export default function CartPage() {
                     </button>
                   </div>
 
-                  {/* Действия */}
                   <div className={styles.itemActions}>
                     <button
                       onClick={() => toggleFavorite(item.product)}
@@ -227,7 +203,6 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Мобильная версия действий */}
                 <div className={styles.itemActions}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <span style={{ fontSize: '0.875rem', color: '#64748b' }}>
@@ -240,7 +215,6 @@ export default function CartPage() {
           })}
         </div>
 
-        {/* Итоговая секция */}
         <div className={styles.summarySection}>
           <h2 className={styles.summaryTitle}>Итого к оплате</h2>
           
@@ -261,20 +235,11 @@ export default function CartPage() {
 
           <button
             onClick={handleCheckout}
-            disabled={loading || cartTotal === 0}
+            disabled={cartTotal === 0}
             className={styles.checkoutButton}
           >
-            {loading ? (
-              <>
-                <div className="spinner"></div>
-                Оформление...
-              </>
-            ) : (
-              <>
-                <FaCreditCard />
-                Оформить заказ
-              </>
-            )}
+            <FaCreditCard />
+            Оформить заказ
           </button>
         </div>
       </main>

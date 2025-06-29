@@ -1,0 +1,182 @@
+/* styles/AdminProducts.module.css */
+
+.pageContainer {
+    padding: 2rem;
+}
+
+.headerWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    /* Для адаптивности */
+    gap: 1rem;
+}
+
+.pageTitle {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.addButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #4f46e5;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.addButton:hover {
+    background-color: #4338ca;
+}
+
+
+/* --- Таблица для десктопов --- */
+
+.tableContainer {
+    display: none;
+}
+
+@media (min-width: 1024px) {
+    .tableContainer {
+        display: block;
+        background-color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        overflow-x: auto;
+    }
+}
+
+.productTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tableHeader {
+    padding: 1rem 1.5rem;
+    text-align: left;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.tableCell {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    vertical-align: middle;
+}
+
+.productImage {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.actionButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+.editButton {
+    background-color: #e0e7ff;
+    color: #3730a3;
+}
+
+.deleteButton {
+    background-color: #fee2e2;
+    color: #b91c1c;
+}
+
+
+/* --- Карточки для мобильных --- */
+
+.cardsContainer {
+    display: grid;
+    gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+    .cardsContainer {
+        display: none;
+    }
+}
+
+.productCard {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.cardHeader {
+    display: flex;
+    padding: 1rem;
+    gap: 1rem;
+    align-items: center;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.cardImage {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.cardInfo h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.cardInfo p {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.cardDetails {
+    padding: 1rem;
+}
+
+.cardDetails p {
+    margin: 0 0 0.5rem;
+    font-weight: 500;
+}
+
+.cardDetails p span {
+    font-weight: 400;
+    color: #4b5563;
+}
+
+.cardVariantsList {
+    padding-left: 1.2rem;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.cardActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    padding: 0 1rem 1rem;
+}
+
+.cardActionButton {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+}

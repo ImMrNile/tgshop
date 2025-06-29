@@ -1,168 +1,191 @@
 // prisma/schema.prisma
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 
 generator client {
   provider = "prisma-client-js"
-  log = ["query", "info", "warn", "error"]
 }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// Модель для пользователя Telegram Mini App
-// Включает данные для реферальной системы и скидок
+// МОДЕЛИ ДАННЫХ
+
 model User {
-  id               String           @id @default(uuid()) // Используем UUID для id пользователя в БД
-  telegramId       String           @unique // Уникальный ID пользователя из Telegram
-  username         String?
-  firstName        String?
-  lastName         String?
-  languageCode     String?          // Язык пользователя из Telegram
-  referralCode     String?          @unique // Уникальный реферальный код пользователя для приглашений
-  referredById     String?          // ID пользователя, который пригласил текущего
-  isKOL            Boolean          @default(false) // Является ли KOL (Key Opinion Leader)
-  referralPercentage Float          @default(3.0) // % от заказа для реферала (по умолчанию 3%, для KOL до 10%)
-  personalDiscount Decimal?         @db.Decimal(10, 2) // Персональная скидка для пользователя (в процентах, например 50.00)
-  
-  // Связи для реферальной системы
-  referredUsers    User[]           @relation("Referrals") // Пользователи, которых пригласил этот пользователь
-  referrer         User?            @relation("Referrals", fields: [referredById], references: [id]) // Кто пригласил этого пользователя
+  id                 String           @id @default(uuid())
+  telegramId         String           @unique
+  username           String?
+  firstName          String?
+  lastName           String?
+  languageCode       String?
+  referralCode       String?          @unique
+  referredById       String?
+  isKOL              Boolean          @default(false)
+  referralPercentage Float            @default(3.0)
+  personalDiscount   Decimal?         @db.Decimal(10, 2)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  orders           Order[]          // Заказы, сделанные этим пользователем
-  referralPayouts  ReferralPayout[] // История выплат рефералу
-  deliveryDetails  DeliveryDetail[] // Сохраненные данные для доставки
-
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  // Связи
+  referredUsers   User[]           @relation("Referrals")
+  referrer        User?            @relation("Referrals", fields: [referredById], references: [id], onDelete: SetNull)
+  orders          Order[]
+  deliveryDetails DeliveryDetail[]
+  reviews         Review[]
+  referralPayouts ReferralPayout[]
 }
 
-// Модель для хранения данных доставки пользователя
-// Пользователь может сохранить несколько адресов
 model DeliveryDetail {
-  id          String   @id @default(uuid())
+  id          String          @id @default(uuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        DeliveryService // Тип доставки (Почта, СДЭК, Boxberry и т.д.)
-  address     String   // Адрес (улица, дом, квартира)
-  postalCode  String   // Индекс
+  type        DeliveryService
+  address     String
+  postalCode  String
   country     String
   city        String
-  region      String?  // Область/Регион (опционально)
+  region      String?
   phoneNumber String
   fullName    String
-  isDefault   Boolean  @default(false) // Является ли этот адрес основным
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isDefault   Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, address])
 }
 
-// Модель для товара
 model Product {
-  id              String           @id @default(uuid())
-  name            String
-  description     String?          // Описание товара
-  composition     String?          // Состав
-  careInstructions String?    
-brand           String?       // Описание по уходу
-  category        Category
-  season          Season
-  gender          Gender
-  price           Decimal          @db.Decimal(10, 2) // Цена продажи без скидки
-  oldPrice        Decimal?         @db.Decimal(10, 2) // Цена до скидки (перечеркнутая)
-  currentPrice    Decimal          @db.Decimal(10, 2) // Актуальная цена, после применения скидок
-  costPrice       Decimal          @db.Decimal(10, 2) // Себестоимость (для админа)
-  images          String[]         // Массив URL изображений
-  videos          String[]         // Массив URL видео (опционально)
+  id               String   @id @default(uuid())
+  name             String
+  description      String?
+  composition      String?
+  careInstructions String?
+  brand            String?
+  category         Category
+  season           Season
+  gender           Gender
+  price            Decimal  @db.Decimal(10, 2)
+  oldPrice         Decimal? @db.Decimal(10, 2)
+  currentPrice     Decimal  @db.Decimal(10, 2)
+  costPrice        Decimal  @db.Decimal(10, 2)
+  images           String[]
+  videos           String[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  variants        ProductVariant[] // Варианты товара (цвет, размер, остаток)
-
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  // Связи
+  variants   ProductVariant[]
+  orderItems OrderItem[]
+  reviews    Review[]
 }
 
-
-// Модель для заказа
-model Order {
-  id                String          @id @default(uuid())
-  userId            String          // ID пользователя из таблицы User
-  user              User            @relation(fields: [userId], references: [id])
-  
-  // Данные доставки, введенные пользователем при оформлении заказа
-  deliveryType      DeliveryService // Тип доставки (Почта, СДЭК, Boxberry и т.д.)
-  deliveryAddress   String          // Адрес (улица, дом, квартира)
-  deliveryPostalCode String          // Индекс
-  deliveryCountry   String
-  deliveryCity      String
-  deliveryRegion    String?         // Область/Регион (опционально)
-  deliveryPhoneNumber String
-  deliveryFullName  String
-
-  totalAmount       Decimal         @db.Decimal(10, 2) // Общая сумма заказа от клиента (с учетом персональной скидки пользователя)
-  status            OrderStatus     @default(PENDING)
-  paymentMethod     PaymentMethod
-  paymentId         String?         @unique // ID транзакции от платежной системы
-  
-  trackingNumber    String?         // Трек-номер для отслеживания (заполняет админ)
-  trackingLink      String?         // Ссылка для отслеживания (заполняет админ)
-
-  // Поля для расчета прибыли (заполняет админ)
-  deliveryCostPaidByAdmin Decimal?  @db.Decimal(10, 2) // Стоимость доставки, которую оплатил админ
-  acquiringFee            Decimal?  @db.Decimal(10, 2) // Комиссия эквайринга за этот заказ
-  referralFee             Decimal?  @db.Decimal(10, 2) // Выплата рефералу за этот заказ (рассчитывается автоматически)
-  
-  profit                  Decimal?  @db.Decimal(10, 2) // Рассчитанная прибыль по заказу
-
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-
-  items             OrderItem[]     // Товары в заказе
-  referralPayout    ReferralPayout? // Связь с выплатой рефералу, если есть
-}
-
-// Варианты товара (комбинации цвета, размера и остатка)
 model ProductVariant {
   id        String @id @default(uuid())
   productId String
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  color     String? // Цвет (например, "черный", "белый", "#RRGGBB")
-  size      String // Размер (например, "S", "M", "L", "38", "39")
-  stock     Int    // Количество на складе
-  
-  // Добавляем обратную связь с OrderItem
-  orderItems OrderItem[] // Указывает, какие OrderItem'ы используют этот ProductVariant
-  
-  // Композитный уникальный индекс
+  color     String?
+  size      String
+  stock     Int
+
+  // Связи
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
   @@unique([productId, color, size])
 }
 
-// Элемент заказа (товар в заказе)
-model OrderItem {
-  id             String  @id @default(uuid())
-  orderId        String
-  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId      String
-  productName    String
-  productPrice   Decimal @db.Decimal(10, 2)
-  productCostPrice Decimal @db.Decimal(10, 2)
-  productVariantId String
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id]) // Эта связь теперь имеет обратную сторону
-  quantity       Int
+model Order {
+  id                      String        @id @default(uuid())
+  userId                  String
+  deliveryType            DeliveryService
+  deliveryAddress         String
+  deliveryPostalCode      String
+  deliveryCountry         String
+  deliveryCity            String
+  deliveryRegion          String?
+  deliveryPhoneNumber     String
+  deliveryFullName        String
+  totalAmount             Decimal       @db.Decimal(10, 2)
+  status                  OrderStatus   @default(PENDING)
+  paymentMethod           PaymentMethod
+  paymentId               String?       @unique
+  trackingNumber          String?
+  trackingLink            String?
+  deliveryCostPaidByAdmin Decimal?      @db.Decimal(10, 2)
+  acquiringFee            Decimal?      @db.Decimal(10, 2)
+  referralFee             Decimal?      @db.Decimal(10, 2)
+  profit                  Decimal?      @db.Decimal(10, 2)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  // Связи
+  user           User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  items          OrderItem[]
+  comments       Comment[]
+  referralPayout ReferralPayout?
 }
 
-// Модель для отслеживания выплат рефералам
+model OrderItem {
+  id               String @id @default(uuid())
+  orderId          String
+  productId        String
+  productVariantId String
+  productName      String
+  productPrice     Decimal @db.Decimal(10, 2)
+  productCostPrice Decimal @db.Decimal(10, 2)
+  quantity         Int
+
+  // Связи
+  order          Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product        @relation(fields: [productId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+}
+
+model Comment {
+  id         String   @id @default(uuid())
+  text       String?
+  imageUrls  String[]
+  authorRole Role     @default(ADMIN)
+  createdAt  DateTime @default(now())
+  orderId    String
+
+  // Связи
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  rating    Float
+  text      String?
+  imageUrls String[]
+  createdAt DateTime @default(now())
+  userId    String
+  productId String
+
+  // Связи
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
 model ReferralPayout {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  orderId   String   @unique // Каждая выплата привязана к одному заказу
-  order     Order    @relation(fields: [orderId], references: [id])
-  amount    Decimal  @db.Decimal(10, 2) // Сумма выплаты за этот заказ
+  orderId   String   @unique
+  amount    Decimal  @db.Decimal(10, 2)
   createdAt DateTime @default(now())
+
+  // Связи
+  user  User  @relation(fields: [userId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
 }
 
-// ENUMS (Перечисления)
+// ПЕРЕЧИСЛЕНИЯ (ENUMS)
+
+enum Role {
+  ADMIN
+  USER
+}
+
 enum Category {
   CLOTHING
   FOOTWEAR
@@ -184,29 +207,27 @@ enum Gender {
 }
 
 enum OrderStatus {
-  PENDING         // Ожидает оплаты / Подтверждения
-  PAID            // Оплачен
-  PROCESSING      // Обрабатывается (собирается, упаковывается)
-  SHIPPED         // Отправлен
-  DELIVERED       // Доставлен
-  CANCELLED       // Отменен
-  REFUNDED        // Возвращен (оплачен, но затем отменен и деньги возвращены)
+  PENDING
+  PAID
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
 }
 
 enum PaymentMethod {
   TELEGRAM_STARS
   CARD
   SBP
-  // Можно добавить другие методы, например, CASH_ON_DELIVERY (Наличными при получении)
 }
 
-// Типы служб доставки
 enum DeliveryService {
-  POST_RF       // Почта России
-  SDEK          // СДЭК
-  BOXBERRY      // Boxberry
-  FIVE_POST     // 5Post
-  YANDEX_PVZ    // Яндекс Доставка через ПВЗ Яндекс Маркета
-  COURIER       // Курьерская доставка (если своя или другая)
-  OTHER         // Другая служба
+  POST_RF
+  SDEK
+  BOXBERRY
+  FIVE_POST
+  YANDEX_PVZ
+  COURIER
+  OTHER
 }

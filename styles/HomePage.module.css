@@ -886,3 +886,39 @@
 .errorShake {
     animation: shake 0.5s ease-in-out;
 }
+
+.notificationBanner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: linear-gradient(135deg, #2563eb, #4f46e5);
+    color: white;
+    padding: 1rem;
+    margin: 1rem;
+    border-radius: 12px;
+    text-decoration: none;
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+    transition: all 0.3s ease;
+}
+
+.notificationBanner:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 25px rgba(79, 70, 229, 0.4);
+}
+
+.notificationIcon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.notificationTitle {
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+}
+
+.notificationText {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    line-height: 1.4;
+    margin: 0;
+}

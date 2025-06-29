@@ -1,0 +1,343 @@
+/* styles/MyOrders.module.css */
+
+@media (max-width: 640px) {
+    .mainContent {
+        padding: 0.5rem;
+    }
+    .detailCard {
+        padding: 1rem;
+    }
+    .header h1 {
+        font-size: 1.1rem;
+    }
+}
+
+
+/* --- Стили для чата --- */
+
+.chatContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+}
+
+.chatBubble {
+    padding: 0.75rem 1rem;
+    border-radius: 18px;
+    max-width: 80%;
+    width: fit-content;
+}
+
+.adminBubble {
+    background-color: #eef2ff;
+    color: #3730a3;
+    border-bottom-left-radius: 4px;
+    align-self: flex-start;
+}
+
+.userBubble {
+    background-color: #4f46e5;
+    color: white;
+    border-bottom-right-radius: 4px;
+    align-self: flex-end;
+}
+
+.chatText {
+    margin: 0 0 0.25rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.chatTimestamp {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    display: block;
+    text-align: right;
+    margin-top: 0.25rem;
+}
+
+.chatImages {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.chatImage {
+    max-width: 100px;
+    border-radius: 8px;
+}
+
+.chatInputContainer {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 1rem;
+}
+
+.chatInput {
+    flex-grow: 1;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 1rem;
+}
+
+.sendButton {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border: none;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: background-color 0.2s;
+}
+
+.sendButton:hover:not(:disabled) {
+    background-color: #4338ca;
+}
+
+.sendButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.pageContainer {
+    padding-bottom: 2rem;
+    background: #f3f4f6;
+    min-height: 100vh;
+}
+
+.header {
+    background: #fff;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.header h1 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.backButton {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #374151;
+}
+
+.mainContent {
+    padding: 1rem;
+}
+
+.ordersList {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.orderCard {
+    background: #fff;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.orderCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cardHeader span:first-child {
+    font-weight: 500;
+}
+
+.cardBody p {
+    margin: 0.25rem 0;
+    color: #6b7280;
+}
+
+.statusBadge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.statusPending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.statusPaid {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.statusShipped {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.statusDelivered {
+    background-color: #c7d2fe;
+    color: #3730a3;
+}
+
+.statusCancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.emptyState {
+    text-align: center;
+    padding-top: 4rem;
+    color: #6b7280;
+}
+
+.emptyState h2 {
+    font-size: 1.5rem;
+    color: #1f2937;
+    margin: 1rem 0 0.5rem;
+}
+
+.button {
+    background: #4f46e5;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+
+
+/* Стили для страницы деталей */
+
+.detailCard {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.detailCard h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+}
+
+.itemDetail {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.itemDetail:last-child {
+    border-bottom: none;
+}
+
+.comment {
+    background: #f3f4f6;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.comment p {
+    margin: 0 0 0.5rem;
+}
+
+.comment span {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+
+/* Добавить в конец файла styles/MyOrders.module.css */
+
+.commentsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+
+/* Добавить в конец файла styles/MyOrders.module.css */
+
+.detailRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.trackNumberWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.copyButton {
+    background-color: #eef2ff;
+    color: #4f46e5;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    min-width: 32px;
+}
+
+.copyButton:hover {
+    background-color: #e0e7ff;
+}
+
+.commentsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+
+/* Добавить в конец файла styles/MyOrders.module.css */
+
+.commentDate {
+    font-size: 0.8rem;
+    color: #6b7280;
+    text-align: right;
+    display: block;
+}
+
+.pageContainerWithNav {
+    padding-bottom: 80px;
+    /* Добавляем отступ снизу, равный высоте нав. панели */
+}

@@ -1,8 +1,8 @@
 // pages/api/admin/dashboard-stats.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import prisma from '../../../lib/prisma'; // Путь к глобальному экземпляру Prisma
+import prisma from '../../../lib/prisma';
+import { OrderStatus } from '@prisma/client';
 
-// Вспомогательная функция для проверки авторизации админа
 const checkAdminAuth = (req: NextApiRequest): boolean => {
   return !!process.env.ADMIN_TELEGRAM_ID;
 };
@@ -12,77 +12,72 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  if (req.method === 'GET') {
-    try {
-      // 1. Общее количество заказов
-      const totalOrdersCount = await prisma.order.count();
-
-      // 2. Количество заказов по статусам
-      const ordersByStatus = await prisma.order.groupBy({
-        by: ['status'],
-        _count: {
-          id: true,
-        },
-      });
-
-      // 3. Общая сумма всех оплаченных заказов (Выручка)
-      const totalRevenueResult = await prisma.order.aggregate({
-        where: {
-          status: 'PAID', // Или 'DELIVERED', в зависимости от того, что вы считаете выручкой
-        },
-        _sum: {
-          totalAmount: true,
-        },
-      });
-      const totalRevenue = totalRevenueResult._sum.totalAmount ? parseFloat(totalRevenueResult._sum.totalAmount.toString()) : 0;
-
-      // 4. Общая прибыль
-      const totalProfitResult = await prisma.order.aggregate({
-        where: {
-          status: 'PAID', // Считаем прибыль только по оплаченным заказам
-          profit: {
-            not: null, // Убедимся, что прибыль рассчитана
-          },
-        },
-        _sum: {
-          profit: true,
-        },
-      });
-      const totalProfit = totalProfitResult._sum.profit ? parseFloat(totalProfitResult._sum.profit.toString()) : 0;
-
-      // 5. Количество новых пользователей за последние 30 дней
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const newUsersCount = await prisma.user.count({
-        where: {
-          createdAt: {
-            gte: thirtyDaysAgo,
-          },
-        },
-      });
-
-      // Форматируем данные по статусам для удобства
-      const statusCounts = ordersByStatus.reduce((acc, curr) => {
-        acc[curr.status] = curr._count.id;
-        return acc;
-      }, {} as Record<string, number>);
-
-
-      res.status(200).json({
-        totalOrders: totalOrdersCount,
-        ordersByStatus: statusCounts,
-        totalRevenue: totalRevenue,
-        totalProfit: totalProfit,
-        newUsersLast30Days: newUsersCount,
-        // Можно добавить больше метрик: средний чек, топ товаров, и т.д.
-      });
-
-    } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
-      res.status(500).json({ message: 'Failed to fetch dashboard stats', error: (error as Error).message });
-    }
-  } else {
+  if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
+    return;
+  }
+
+  try {
+    // --- Получаем все заказы, которые влияют на финансовые показатели ---
+    const relevantOrders = await prisma.order.findMany({
+      where: {
+        status: {
+          in: [OrderStatus.PAID, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED],
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    // --- Считаем новые, более точные финансовые показатели ---
+    let totalRevenue = 0;
+    let totalCostOfGoods = 0;
+    let totalDeliveryCosts = 0;
+    
+    for (const order of relevantOrders) {
+      totalRevenue += parseFloat(order.totalAmount.toString());
+      totalDeliveryCosts += parseFloat(order.deliveryCostPaidByAdmin?.toString() || '0');
+      for (const item of order.items) {
+        totalCostOfGoods += parseFloat(item.productCostPrice.toString()) * item.quantity;
+      }
+    }
+    // Чистая прибыль = Выручка - Себестоимость товаров - Затраты на доставку
+    const netProfit = totalRevenue - totalCostOfGoods - totalDeliveryCosts;
+
+    // --- Ваша существующая логика для остальных виджетов ---
+    const totalOrdersCount = await prisma.order.count();
+    const ordersByStatus = await prisma.order.groupBy({
+      by: ['status'],
+      _count: { id: true },
+    });
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const newUsersCount = await prisma.user.count({
+      where: { createdAt: { gte: thirtyDaysAgo } },
+    });
+
+    const statusCounts = ordersByStatus.reduce((acc, curr) => {
+      acc[curr.status] = curr._count.id;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // --- Отправляем объединенный результат ---
+    res.status(200).json({
+      totalOrders: totalOrdersCount,
+      ordersByStatus: statusCounts,
+      totalRevenue: totalRevenue,
+      totalProfit: netProfit, // <-- Отправляем новую, рассчитанную прибыль
+      newUsersLast30Days: newUsersCount,
+      // Дополнительные данные для наглядности
+      totalCostOfGoods,
+      totalDeliveryCosts
+    });
+
+  } catch (error) {
+    console.error('Failed to fetch dashboard stats:', error);
+    res.status(500).json({ message: 'Failed to fetch dashboard stats', error: (error instanceof Error) ? error.message : 'Unknown error' });
   }
 }
