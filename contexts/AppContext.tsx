@@ -1,5 +1,5 @@
 // contexts/AppContext.tsx
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 
 // Типы для товаров
 interface ProductVariant {
@@ -47,6 +47,21 @@ type AppAction =
   | { type: 'REMOVE_FROM_FAVORITES'; payload: string } // ID товара
   | { type: 'LOAD_STATE'; payload: AppState };
 
+// ЯВНО ОПРЕДЕЛЯЕМ ТИП КОНТЕКСТА
+interface AppContextType {
+  state: AppState;
+  addToCart: (product: Product, variant: ProductVariant, quantity?: number) => void;
+  removeFromCart: (productId: string, variantId: string) => void;
+  updateCartQuantity: (productId: string, variantId: string, quantity: number) => void;
+  clearCart: () => void;
+  addToFavorites: (product: Product) => void;
+  removeFromFavorites: (productId: string) => void;
+  toggleFavorite: (product: Product) => void;
+  isInFavorites: (productId: string) => boolean;
+  getCartItemId: (productId: string, variantId: string) => string;
+}
+
+
 // Функция для создания ID элемента корзины
 const createCartItemId = (productId: string, variantId: string): string => {
   return `${productId}-${variantId}`;
@@ -67,7 +82,6 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       const { product, variant, quantity } = action.payload;
       const itemId = createCartItemId(product.id, variant.id);
       
-      // Проверяем, есть ли уже такой товар в корзине
       const existingItemIndex = state.cart.findIndex(item => 
         createCartItemId(item.product.id, item.variant.id) === itemId
       );
@@ -75,14 +89,12 @@ const appReducer = (state: AppState, action: AppAction): AppState => {
       let newCart: CartItem[];
       
       if (existingItemIndex >= 0) {
-        // Обновляем количество существующего товара
         newCart = state.cart.map((item, index) => 
           index === existingItemIndex 
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
-        // Добавляем новый товар
         newCart = [...state.cart, { product, variant, quantity }];
       }
       
@@ -193,18 +205,7 @@ const initialState: AppState = {
 };
 
 // Контекст
-const AppContext = createContext<{
-  state: AppState;
-  addToCart: (product: Product, variant: ProductVariant, quantity?: number) => void;
-  removeFromCart: (productId: string, variantId: string) => void;
-  updateCartQuantity: (productId: string, variantId: string, quantity: number) => void;
-  clearCart: () => void;
-  addToFavorites: (product: Product) => void;
-  removeFromFavorites: (productId: string) => void;
-  toggleFavorite: (product: Product) => void;
-  isInFavorites: (productId: string) => boolean;
-  getCartItemId: (productId: string, variantId: string) => string;
-} | undefined>(undefined);
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
 // Константы для localStorage
 const STORAGE_KEYS = {
@@ -213,10 +214,9 @@ const STORAGE_KEYS = {
 };
 
 // Провайдер контекста
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(appReducer, initialState);
   
-  // Загрузка состояния из localStorage при инициализации
   useEffect(() => {
     try {
       const savedCart = localStorage.getItem(STORAGE_KEYS.CART);
@@ -244,7 +244,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, []);
   
-  // Сохранение корзины в localStorage при изменении
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.CART, JSON.stringify(state.cart));
@@ -253,7 +252,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.cart]);
   
-  // Сохранение избранного в localStorage при изменении
   useEffect(() => {
     try {
       localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(state.favorites));
@@ -262,7 +260,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [state.favorites]);
   
-  // Функции для работы с корзиной
   const addToCart = (product: Product, variant: ProductVariant, quantity: number = 1) => {
     dispatch({
       type: 'ADD_TO_CART',
@@ -290,7 +287,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     dispatch({ type: 'CLEAR_CART' });
   };
   
-  // Функции для работы с избранным
   const addToFavorites = (product: Product) => {
     dispatch({
       type: 'ADD_TO_FAVORITES',
@@ -323,7 +319,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return createCartItemId(productId, variantId);
   };
   
-  const value = {
+  // ЯВНО ТИПИЗИРУЕМ ОБЪЕКТ VALUE
+  const value: AppContextType = {
     state,
     addToCart,
     removeFromCart,
@@ -344,7 +341,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 };
 
 // Хук для использования контекста
-export const useApp = () => {
+export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error('useApp должен использоваться внутри AppProvider');

@@ -1,11 +1,13 @@
-// pages/products/[id].tsx - ОБНОВЛЕННАЯ ВЕРСИЯ
-import { useEffect, useState } from 'react';
+// pages/products/[id].tsx - ОБНОВЛЕНО
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import styles from '../../styles/ProductDetail.module.css';
 import { getBrandLogoUrl } from '../../lib/brandLogos';
 import { useApp } from '../../contexts/AppContext';
+import { generateProductShareLink, handleShare } from '../../lib/utils'; // Обновленный импорт
 
 // Импорты иконок
 import { 
@@ -15,10 +17,10 @@ import {
   FaChevronRight, 
   FaInfoCircle, 
   FaHeart,
-  FaShare,
+  FaShareAlt,
+  FaCopy,
   FaCheck,
-  FaStar,
-  FaShippingFast
+  FaShippingFast,
 } from 'react-icons/fa';
 import { MdOutlineLocalLaundryService, MdSecurity } from 'react-icons/md';
 
@@ -61,32 +63,34 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [addingToCart, setAddingToCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      async function fetchProduct() {
-        try {
-          const res = await fetch(`/api/products/${id}`);
-          if (!res.ok) {
-            throw new Error(`Ошибка: ${res.status}`);
-          }
-          const data = await res.json();
-          setProduct(data);
-          if (data.variants && data.variants.length > 0) {
-            setSelectedVariant(data.variants[0]);
-          }
-          if (data.images && data.images.length > 0) {
-            setCurrentImageIndex(0);
-          }
-        } catch (err: any) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
+  const fetchProduct = useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/products/${id}`);
+      if (!res.ok) {
+        throw new Error(`Ошибка: ${res.status}`);
       }
-      fetchProduct();
+      const data = await res.json();
+      setProduct(data);
+      if (data.variants && data.variants.length > 0) {
+        setSelectedVariant(data.variants[0]);
+      }
+      if (data.images && data.images.length > 0) {
+        setCurrentImageIndex(0);
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
+    } finally {
+      setLoading(false);
     }
   }, [id]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [fetchProduct]);
 
   const handleAddToCart = async () => {
     if (!product || !selectedVariant) {
@@ -102,7 +106,6 @@ export default function ProductDetailPage() {
     setAddingToCart(true);
     
     try {
-      // Имитация добавления в корзину
       await new Promise(resolve => setTimeout(resolve, 800));
       
       addToCart(product, selectedVariant, 1);
@@ -110,7 +113,7 @@ export default function ProductDetailPage() {
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 3000);
       
-    } catch (error) {
+    } catch {
       alert('Ошибка при добавлении в корзину');
     } finally {
       setAddingToCart(false);
@@ -127,21 +130,20 @@ export default function ProductDetailPage() {
     setCurrentImageIndex((prevIndex) => (prevIndex - 1 + product.images.length) % product.images.length);
   };
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: product?.name,
-          text: product?.description,
-          url: window.location.href,
-        });
-      } catch (err) {
-        console.log('Sharing failed:', err);
-      }
-    } else {
-      // Fallback - копировать ссылку
-      navigator.clipboard.writeText(window.location.href);
-      alert('Ссылка скопирована в буфер обмена!');
+  const handleProductShare = async () => {
+    if (!product || !product.id) return;
+
+    const productLink = generateProductShareLink(product.id);
+
+    const success = await handleShare(
+      `Elite Market: ${product.name}`,
+      `Зацени этот товар в Elite Market: ${product.name}`,
+      productLink
+    );
+
+    if (success) {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
     }
   };
 
@@ -206,36 +208,22 @@ export default function ProductDetailPage() {
       {/* Шапка с навигацией */}
       <header className={styles.header}>
         <button onClick={() => router.back()} className={styles.backButton}>
-          <FaArrowLeft />
+          <FaArrowLeft size={24} />
         </button>
         <div className={styles.headerActions}>
           <button 
             onClick={handleToggleFavorite} 
             className={`${styles.actionButton} ${isLiked ? styles.liked : ''}`}
           >
-            <FaHeart />
+            <FaHeart size={24} />
           </button>
-          <button onClick={handleShare} className={styles.actionButton}>
-            <FaShare />
+          <button onClick={handleProductShare} className={styles.actionButton}>
+            {copySuccess ? <FaCopy size={24} /> : <FaShareAlt size={24} />}
           </button>
           <Link href="/cart" className={styles.actionButton} style={{ position: 'relative' }}>
-            <FaShoppingCart />
+            <FaShoppingCart size={24} />
             {state.cartCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: '-5px',
-                right: '-5px',
-                background: '#ef4444',
-                color: 'white',
-                borderRadius: '50%',
-                width: '20px',
-                height: '20px',
-                fontSize: '0.75rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold'
-              }}>
+              <span className={styles.cartBadge}>
                 {state.cartCount}
               </span>
             )}
@@ -249,7 +237,13 @@ export default function ProductDetailPage() {
           {product.images && product.images.length > 0 ? (
             <div className={styles.imageGallery}>
               <div className={styles.mainImageContainer}>
-                <img src={currentImage} alt={product.name} className={styles.mainImage} />
+                <Image 
+                  src={currentImage} 
+                  alt={product.name} 
+                  className={styles.mainImage}
+                  width={500}
+                  height={500}
+                />
                 
                 {discountPercent > 0 && (
                   <div className={styles.discountBadge}>
@@ -260,10 +254,10 @@ export default function ProductDetailPage() {
                 {product.images.length > 1 && (
                   <>
                     <button onClick={goToPrevImage} className={`${styles.navButton} ${styles.prevButton}`}>
-                      <FaChevronLeft />
+                      <FaChevronLeft size={24} />
                     </button>
                     <button onClick={goToNextImage} className={`${styles.navButton} ${styles.nextButton}`}>
-                      <FaChevronRight />
+                      <FaChevronRight size={24} />
                     </button>
                     <div className={styles.imageIndicators}>
                       {product.images.map((_, index) => (
@@ -286,7 +280,7 @@ export default function ProductDetailPage() {
                       className={`${styles.thumbnail} ${index === currentImageIndex ? styles.activeThumbnail : ''}`}
                       onClick={() => setCurrentImageIndex(index)}
                     >
-                      <img src={img} alt={`Фото ${index + 1}`} />
+                      <Image src={img} alt={`Фото ${index + 1}`} width={80} height={80} />
                     </button>
                   ))}
                 </div>
@@ -306,7 +300,7 @@ export default function ProductDetailPage() {
             {product.brand && (
               <div className={styles.brandInfo}>
                 {brandLogoUrl && (
-                  <img src={brandLogoUrl} alt={`${product.brand} Logo`} className={styles.brandLogo} />
+                  <Image src={brandLogoUrl} alt={`${product.brand} Logo`} className={styles.brandLogo} width={40} height={40} />
                 )}
                 <span className={styles.brandName}>{product.brand}</span>
               </div>
@@ -329,12 +323,6 @@ export default function ProductDetailPage() {
                   ₽{parseFloat(product.oldPrice).toLocaleString()}
                 </span>
               )}
-            </div>
-            <div className={styles.rating}>
-              {[...Array(5)].map((_, i) => (
-                <FaStar key={i} className={i < 4 ? styles.starFilled : styles.starEmpty} />
-              ))}
-              <span className={styles.ratingText}>4.8 (127 отзывов)</span>
             </div>
           </div>
 
@@ -440,4 +428,4 @@ export default function ProductDetailPage() {
       )}
     </div>
   );
-}
+};

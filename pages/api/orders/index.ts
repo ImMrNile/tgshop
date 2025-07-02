@@ -1,6 +1,7 @@
 // pages/api/orders/index.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
+import { getUserFromRequest } from '../../../lib/auth'; // Импортируем getUserFromRequest
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -8,8 +9,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  // В реальном приложении ID пользователя нужно будет получать из сессии или аутентификации
-  const userId = '2138182633'; // Используем наш тестовый ID пользователя
+  // Получаем userId из аутентифицированного пользователя
+  const user = await getUserFromRequest(req);
+  if (!user) {
+    console.error('API /orders: Unauthorized attempt. No valid user found from token.');
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+  const userId = user.id;
 
   try {
     const orders = await prisma.order.findMany({

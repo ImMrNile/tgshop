@@ -1,12 +1,14 @@
-// pages/orders/index.tsx
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
-import styles from '../../styles/MyOrders.module.css';
-import { Order, OrderStatus } from '@prisma/client';
-import { FaArrowLeft, FaBoxOpen } from 'react-icons/fa';
-import BottomNav from '../../components/BottomNav'; // <-- Импортируем навигацию
+// pages/orders/index.ts
 
+import { useState, useEffect } from 'react';
+import Head from 'next/head';
+import Link from 'next/link';
+import type { Order as PrismaOrder, OrderStatus } from '@prisma/client';
+import styles from '../../styles/MyOrders.module.css'; // Можно использовать те же стили
+import BottomNav from '../../components/BottomNav';
+import { useAuth } from '../../components/AuthProvider'; // Импортируем useAuth
+
+// Карта для перевода статусов на русский язык
 const orderStatusRussianNames: Record<OrderStatus, string> = {
   PENDING: 'В ожидании',
   PAID: 'Оплачен',
@@ -17,37 +19,88 @@ const orderStatusRussianNames: Record<OrderStatus, string> = {
   REFUNDED: 'Возвращен'
 };
 
+// Компонент страницы
 export default function MyOrdersPage() {
-  const router = useRouter();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { user, isAuthenticated, isLoading } = useAuth(); // Получаем user из контекста
+  const [orders, setOrders] = useState<PrismaOrder[]>([]); // Используем PrismaOrder
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
+      // Ждем завершения загрузки аутентификации и наличия пользователя
+      if (isLoading || !isAuthenticated || !user) {
+        setLoading(isLoading); // Пока авторизация загружается, показываем загрузку
+        return;
+      }
+
+      setLoading(true);
       try {
-        const res = await fetch('/api/orders');
-        if (!res.ok) throw new Error('Не удалось загрузить заказы');
+        const token = localStorage.getItem('authToken'); // Получаем токен
+        const res = await fetch(`/api/orders?userId=${user.id}`, { // Используем user.id из контекста и передаем токен
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+        }); 
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Не удалось загрузить заказы');
+        }
         const data = await res.json();
         setOrders(data);
-      } catch (error) {
-        console.error(error);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Произошла ошибка');
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrders();
-  }, []);
 
-  const getStatusClass = (status: string) => {
-    switch (status) {
-      case 'PAID': return styles.statusPaid;
-      case 'SHIPPED': return styles.statusShipped;
-      case 'DELIVERED': return styles.statusDelivered;
-      case 'CANCELLED': return styles.statusCancelled;
-      case 'PENDING':
-      default:
-        return styles.statusPending;
+    fetchOrders();
+  }, [user, isAuthenticated, isLoading]); // Зависимости для useEffect: user, isAuthenticated, isLoading
+
+  const renderContent = () => {
+    if (loading) {
+      return <p className={styles.centeredMessage}>Загрузка заказов...</p>;
     }
+
+    // Если не авторизован после загрузки, показать сообщение
+    if (!isAuthenticated) {
+        return <p className={styles.centeredMessage}>Для просмотра заказов необходима авторизация.</p>;
+    }
+
+    if (error) {
+      return <p className={styles.centeredMessage}>Ошибка: {error}</p>;
+    }
+
+    if (orders.length === 0) {
+      return <p className={styles.centeredMessage}>У вас пока нет заказов.</p>;
+    }
+
+    return (
+      <div className={styles.orderList}>
+        {orders.map((order: PrismaOrder) => ( // Явное указание типа order
+          <Link key={order.id} href={`/orders/${order.id}`} className={styles.orderCard}>
+            <div className={styles.orderCardHeader}>
+              <strong>Заказ #{order.id.substring(0, 8)}...</strong>
+              <span className={styles.orderDate}>
+                {new Date(order.createdAt).toLocaleDateString('ru-RU')}
+              </span>
+            </div>
+            <div className={styles.orderCardBody}>
+              <span>Сумма:</span>
+              <strong>{Number(order.totalAmount).toLocaleString('ru-RU')} ₽</strong>
+            </div>
+            <div className={styles.orderCardFooter}>
+              <span>Статус:</span>
+              <strong className={`${styles.status} ${styles[order.status.toLowerCase()]}`}>
+                {orderStatusRussianNames[order.status] || order.status}
+              </strong>
+            </div>
+          </Link>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -57,41 +110,10 @@ export default function MyOrdersPage() {
           <title>Мои заказы</title>
         </Head>
         <header className={styles.header}>
-          {/* Сделаем кнопку "Назад" более умной: если есть куда, идем назад, иначе на главную */}
-      <button onClick={() => router.asPath !== '/' ? router.back() : router.push('/')} className={styles.backButton}>
-  <FaArrowLeft />
-</button>
           <h1>Мои заказы</h1>
-          <div></div>
         </header>
         <main className={styles.mainContent}>
-          {loading ? (
-            <p>Загрузка...</p>
-          ) : orders.length === 0 ? (
-            <div className={styles.emptyState}>
-              <FaBoxOpen size={50} />
-              <h2>У вас пока нет заказов</h2>
-              <p>Самое время это исправить!</p>
-              <button onClick={() => router.push('/')} className={styles.button}>Перейти в каталог</button>
-            </div>
-          ) : (
-            <div className={styles.ordersList}>
-              {orders.map(order => (
-                <div key={order.id} className={styles.orderCard} onClick={() => router.push(`/orders/${order.id}`)}>
-                  <div className={styles.cardHeader}>
-                    <span>Заказ #{order.id.substring(0, 8)}...</span>
-                    <span className={`${styles.statusBadge} ${getStatusClass(order.status)}`}>
-                      {orderStatusRussianNames[order.status]}
-                    </span>
-                  </div>
-                  <div className={styles.cardBody}>
-                    <p>Дата: {new Date(order.createdAt).toLocaleDateString('ru-RU')}</p>
-                    <p>Сумма: <strong>{parseFloat(order.totalAmount.toString()).toLocaleString('ru-RU')} ₽</strong></p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {renderContent()}
         </main>
       </div>
       <BottomNav />

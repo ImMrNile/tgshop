@@ -1,338 +1,614 @@
-// pages/checkout.tsx
+// pages/checkout.tsx - ИСПРАВЛЕНО
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import Link from 'next/link';
-import { useApp } from '../contexts/AppContext';
 import styles from '../styles/Checkout.module.css';
-import { FaArrowLeft, FaPaperPlane, FaRegUserCircle, FaShippingFast, FaCreditCard } from 'react-icons/fa';
-import type { User, DeliveryDetail } from '@prisma/client';
+import { useApp } from '../contexts/AppContext';
+import { useAuth } from '../components/AuthProvider';
+import { DeliveryService, PaymentMethod } from '@prisma/client';
+import { FaArrowLeft, FaCreditCard, FaTelegram, FaSave, FaTrashAlt } from 'react-icons/fa';
 
-// Карты для перевода enum'ов на русский язык
-const deliveryServiceRussianNames: Record<string, string> = {
-  SDEK: 'СДЭК',
-  BOXBERRY: 'Boxberry',
-  POST_RF: 'Почта России',
-  YANDEX_PVZ: 'Яндекс Доставка (ПВЗ)',
-  FIVE_POST: '5Post',
-  COURIER: 'Курьер',
-  OTHER: 'Другая служба',
-};
-const paymentMethodRussianNames: Record<string, string> = {
-  CARD: 'Банковская карта',
-  SBP: 'СБП (Система быстрых платежей)',
-};
+// Интерфейс для сохраненных адресов доставки
+interface SavedDeliveryDetail {
+  id: string;
+  type: DeliveryService;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  region: string | null;
+  postalCode: string | null;
+  country: string;
+  isDefault: boolean;
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { state, clearCart } = useApp();
-  const { cart, cartTotal } = state;
-
-  const TELEGRAM_MANAGER_USERNAME = 'mrnile';
-
-  // Состояния
-  const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [savedAddresses, setSavedAddresses] = useState<DeliveryDetail[]>([]);
+  const { user, isAuthenticated } = useAuth();
+  const [loading, setLoading] = useState(false);
+  
+  // Форма доставки - используем точные поля из вашей схемы
   const [deliveryDetails, setDeliveryDetails] = useState({
+    type: 'SDEK' as DeliveryService,
     fullName: '',
     phoneNumber: '',
-    country: 'Россия',
-    city: '',
-    postalCode: '',
     address: '',
-    type: 'POST_RF',
-    saveAddress: true,
+    city: '',
+    region: '',
+    postalCode: '',
+    country: 'Россия',
+    saveAddress: false
   });
-  const [paymentMethod, setPaymentMethod] = useState('CARD');
+  
+  // Состояние для сохраненных адресов
+  const [savedAddresses, setSavedAddresses] = useState<SavedDeliveryDetail[]>([]);
+  const [showSavedAddresses, setShowSavedAddresses] = useState(false);
+
+  // Способ оплаты - используем существующие значения из БД
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('TELEGRAM_STARS' as PaymentMethod);
+  
+  // Согласие с политикой
   const [agreedToPolicy, setAgreedToPolicy] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Загрузка данных пользователя и его адресов
+  // Проверяем авторизацию и наличие товаров
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
-      try {
-        const [profileRes, addressesRes] = await Promise.all([
-          fetch('/api/user/profile'),
-          fetch('/api/user/delivery-details'),
-        ]);
+    console.log('=== CHECKOUT AUTH CHECK ===');
+    console.log('isAuthenticated:', isAuthenticated);
+    console.log('user:', user ? 'exists' : 'null');
+    console.log('cart length:', state.cart.length);
+    console.log('==========================');
 
-        if (profileRes.ok) {
-          setUserProfile(await profileRes.json());
-        } else {
-          console.error('Не удалось загрузить профиль пользователя');
-        }
-
-        if (addressesRes.ok) {
-          setSavedAddresses(await addressesRes.json());
-        } else {
-          console.error('Не удалось загрузить сохраненные адреса');
-        }
-      } catch (err) {
-        console.error('Ошибка при загрузке данных:', err);
-        setError('Не удалось загрузить данные. Попробуйте обновить страницу.');
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
-
-  // Обработчик изменения полей ввода
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    if (name === 'paymentMethod') {
-      setPaymentMethod(value);
-    } else {
-      setDeliveryDetails(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    }
-  };
-
-  // Обработчик выбора сохраненного адреса
-  const handleAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const addressId = e.target.value;
-    if (!addressId) {
-      // Сброс полей при выборе "Новый адрес"
-      setDeliveryDetails({
-        fullName: '', phoneNumber: '', country: 'Россия', city: '', postalCode: '', address: '',
-        type: 'POST_RF', saveAddress: true,
-      });
+    if (!isAuthenticated) {
+      console.log('CheckoutPage: User not authenticated, redirecting to profile.');
+      router.push('/profile');
       return;
     }
-    const selected = savedAddresses.find(addr => addr.id === addressId);
-    if (selected) {
-      setDeliveryDetails({
-        fullName: selected.fullName,
-        phoneNumber: selected.phoneNumber,
-        country: selected.country,
-        city: selected.city,
-        postalCode: selected.postalCode,
-        address: selected.address,
-        type: selected.type,
-        saveAddress: false, // Адрес уже сохранен
+    
+    if (state.cart.length === 0) {
+      console.log('CheckoutPage: Cart is empty, redirecting to cart page.');
+      router.push('/cart');
+    }
+  }, [state.cart, isAuthenticated, router]);
+
+  // Эффект для загрузки сохраненных адресов
+  useEffect(() => {
+    const fetchSavedAddresses = async () => {
+      // ИСПРАВЛЕНИЕ: Добавлена проверка на user.id перед запросом
+      if (!isAuthenticated || !user || !user.id) { 
+        console.log('CheckoutPage: Skipping fetchSavedAddresses - not authenticated or user not fully loaded.');
+        return;
+      }
+
+      console.log('CheckoutPage: Attempting to fetch saved addresses for user:', user.id);
+      try {
+        // ИСПРАВЛЕНИЕ: Используем user.id в запросе
+        const res = await fetch(`/api/user/delivery-details?userId=${user.id}`); 
+        
+        console.log('Fetch saved addresses response status:', res.status);
+        
+        if (res.ok) {
+          const data: SavedDeliveryDetail[] = await res.json();
+          console.log(`CheckoutPage: Successfully fetched ${data.length} saved addresses.`);
+          setSavedAddresses(data);
+          
+          // Автоматически заполнить форму первым сохраненным адресом, если он есть
+          if (data.length > 0) {
+            const defaultAddress = data.find(addr => addr.isDefault) || data[0];
+            setDeliveryDetails({
+              type: defaultAddress.type,
+              fullName: defaultAddress.fullName,
+              phoneNumber: defaultAddress.phoneNumber,
+              address: defaultAddress.address,
+              city: defaultAddress.city,
+              region: defaultAddress.region || '',
+              postalCode: defaultAddress.postalCode || '',
+              country: defaultAddress.country,
+              saveAddress: false
+            });
+            console.log('CheckoutPage: Auto-filled form with saved address.');
+          }
+        } else {
+          const errorData = await res.json();
+          console.error('CheckoutPage: Failed to fetch saved addresses:', res.status, errorData);
+        }
+      } catch (error) {
+        console.error('CheckoutPage: Error fetching saved addresses:', error);
+      }
+    };
+
+    fetchSavedAddresses();
+  }, [isAuthenticated, router, user]); // ИСПРАВЛЕНИЕ: user в зависимостях
+
+  // ... (остальной код handleSubmit и т.д. без изменений) ...
+
+  const applySavedAddress = (address: SavedDeliveryDetail) => {
+    setDeliveryDetails({
+      type: address.type,
+      fullName: address.fullName,
+      phoneNumber: address.phoneNumber,
+      address: address.address,
+      city: address.city,
+      region: address.region || '',
+      postalCode: address.postalCode || '',
+      country: address.country,
+      saveAddress: false
+    });
+    setShowSavedAddresses(false);
+    console.log('CheckoutPage: Applied saved address:', address.id);
+  };
+
+  // Функция для удаления сохраненного адреса
+  const deleteSavedAddress = async (addressId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этот адрес?')) return;
+    if (!user) return;
+
+    console.log('CheckoutPage: Attempting to delete address ID:', addressId);
+    try {
+      const res = await fetch(`/api/user/delivery-details/${addressId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id })
       });
+
+      if (res.ok) {
+        setSavedAddresses(prev => prev.filter(addr => addr.id !== addressId));
+        alert('Адрес успешно удален!');
+        console.log('CheckoutPage: Address successfully deleted.');
+      } else {
+        const errorData = await res.json();
+        alert(`Ошибка при удалении адреса: ${errorData.message || res.status}`);
+        console.error('CheckoutPage: Failed to delete address:', res.status, errorData);
+      }
+    } catch (error) {
+      console.error('CheckoutPage: Error deleting address:', error);
+      alert('Произошла ошибка при удалении адреса.');
     }
   };
 
-  // Расчет скидки и итоговой суммы
-  const personalDiscountPercent = userProfile?.personalDiscount ? parseFloat(userProfile.personalDiscount.toString()) : 0;
-  const discountAmount = (cartTotal * personalDiscountPercent) / 100;
-  const finalTotal = cartTotal - discountAmount;
+  // Функция для формирования сообщения менеджеру
+  const formatOrderMessage = (orderId: string) => {
+    const deliveryServiceNames: Record<DeliveryService, string> = {
+      POST_RF: 'Почта России',
+      SDEK: 'СДЭК',
+      BOXBERRY: 'Boxberry',
+      FIVE_POST: '5Post',
+      YANDEX_PVZ: 'Яндекс ПВЗ',
+      COURIER: 'Курьер',
+      OTHER: 'Другая служба'
+    };
 
-  // Обработчик отправки формы
+    const paymentMethodNames: Record<PaymentMethod, string> = {
+      TELEGRAM_STARS: 'Наличные при получении',
+      CARD: 'Банковский перевод',
+      SBP: 'СБП (Система быстрых платежей)'
+    };
+
+    const itemsList = state.cart.map(item => 
+      `- ${item.product.name} (${item.variant.size}${item.variant.color ? `, ${item.variant.color}` : ''}) - ${item.quantity} шт.`
+    ).join('\n');
+
+    return `Здравствуйте! Новый заказ №${orderId.substring(0, 8).toUpperCase()}
+
+Клиент: ${user?.firstName} ${user?.lastName} (@${user?.username || user?.telegramId})
+Сумма: ${state.cartTotal} ₽
+Способ оплаты: ${paymentMethodNames[paymentMethod]}
+
+Состав заказа:
+${itemsList}
+
+Доставка:
+ФИО: ${deliveryDetails.fullName}
+Телефон: ${deliveryDetails.phoneNumber}
+Адрес: ${deliveryDetails.address}, ${deliveryDetails.city}${deliveryDetails.postalCode ? `, ${deliveryDetails.postalCode}` : ''}${deliveryDetails.region ? `, ${deliveryDetails.region}` : ''}
+Страна: ${deliveryDetails.country}
+Служба: ${deliveryServiceNames[deliveryDetails.type]}`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    
+    if (!isAuthenticated || !user) {
+      alert('Необходимо авторизоваться для оформления заказа.');
+      return;
+    }
+    
     if (!agreedToPolicy) {
-      setError('Вы должны согласиться с политикой невозвратности товара.');
+      alert('Необходимо согласиться с политикой невозвратности товара.');
       return;
     }
-    if (cart.length === 0) {
-      setError('Ваша корзина пуста.');
-      return;
-    }
+    
     setLoading(true);
-
+    
     try {
-      const res = await fetch('/api/checkout', {
+      console.log('Creating order...');
+      const response = await fetch('/api/checkout', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart, deliveryDetails, paymentMethod, agreedToPolicy }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cart: state.cart,
+          deliveryDetails: {
+            type: deliveryDetails.type,
+            fullName: deliveryDetails.fullName,
+            phoneNumber: deliveryDetails.phoneNumber,
+            address: deliveryDetails.address,
+            city: deliveryDetails.city,
+            region: deliveryDetails.region || null,
+            postalCode: deliveryDetails.postalCode,
+            country: deliveryDetails.country,
+            saveAddress: deliveryDetails.saveAddress
+          },
+          paymentMethod,
+          userId: user.id,
+          agreedToPolicy
+        }),
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Не удалось создать заказ.');
+
+      const data = await response.json();
+
+      if (response.ok) {
+        const orderId = data.order.id;
+        const message = formatOrderMessage(orderId);
+        
+        clearCart();
+        
+        const managerUsername = process.env.NEXT_PUBLIC_MANAGER_USERNAME || 'manager_username_not_set';
+        const telegramUrl = `https://t.me/${managerUsername}?text=${encodeURIComponent(message)}`;
+        
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const webApp = window.Telegram.WebApp;
+          
+          if (webApp.openTelegramLink) {
+            webApp.openTelegramLink(telegramUrl);
+          } else if (webApp.openLink) {
+            webApp.openLink(telegramUrl);
+          } else {
+            window.open(telegramUrl, '_blank');
+          }
+        } else {
+          window.open(telegramUrl, '_blank');
+        }
+        
+        alert(`Заказ №${orderId.substring(0, 8).toUpperCase()} успешно создан! Сообщение отправлено менеджеру.`);
+        router.push('/orders');
+        
+      } else {
+        alert(`Ошибка при создании заказа: ${data.message || 'Неизвестная ошибка'}`);
       }
-      
-      const { order } = data;
-
-      // Формируем сообщение для менеджера
-      let message = `Здравствуйте! Новый заказ №${order.id.substring(0,8)}\n\n`;
-      message += `Сумма к оплате: ${parseFloat(order.totalAmount).toLocaleString('ru-RU')} ₽ (с учетом скидки ${personalDiscountPercent}%)\n`;
-      message += `Способ оплаты: ${paymentMethodRussianNames[paymentMethod] || paymentMethod}\n\n`;
-      message += `Состав заказа:\n`;
-      cart.forEach(item => {
-        message += `- ${item.product.name} (${item.variant.size}) - ${item.quantity} шт.\n`;
-      });
-      message += `\nДоставка:\n`;
-      message += `ФИО: ${deliveryDetails.fullName}\n`;
-      message += `Телефон: ${deliveryDetails.phoneNumber}\n`;
-      message += `Адрес: ${deliveryDetails.country}, ${deliveryDetails.city}, ${deliveryDetails.address}, ${deliveryDetails.postalCode}\n`;
-      message += `Служба: ${deliveryServiceRussianNames[deliveryDetails.type]}`;
-
-      const telegramUrl = `https://t.me/${TELEGRAM_MANAGER_USERNAME}?text=${encodeURIComponent(message)}`;
-      clearCart();
-      window.location.href = telegramUrl;
-
-    } catch (err: unknown) {
-      if (err instanceof Error) setError(err.message);
-      else setError('Произошла неизвестная ошибка');
+    } catch (error) {
+      console.error('Ошибка при отправке заказа:', error);
+      alert('Произошла ошибка при создании заказа.');
+    } finally {
       setLoading(false);
     }
   };
 
-  // Отображение загрузки или пустой корзины
-  if (loading) {
-    return (
-      <div className={styles.pageContainer}>
-        <Head><title>Загрузка...</title></Head>
-        <p style={{ textAlign: 'center', padding: '2rem' }}>Загрузка данных...</p>
-      </div>
-    );
+  // Отображение загрузки или редиректа
+  if (!isAuthenticated) {
+    return <div className={styles.loading}>Необходима авторизация...</div>;
   }
 
-  if (cart.length === 0) {
-    return (
-      <div className={styles.pageContainer}>
-        <Head><title>Корзина пуста</title></Head>
-        <div className={styles.emptyState}>
-          <h3>Ваша корзина пуста</h3>
-          <p>Добавьте товары в корзину, чтобы оформить заказ.</p>
-          <Link href="/" className={styles.shopButton}><FaShippingFast/> Перейти к покупкам</Link>
-        </div>
-      </div>
-    );
+  if (state.cart.length === 0) {
+    return <div className={styles.loading}>Загрузка корзины...</div>;
   }
 
   return (
     <div className={styles.pageContainer}>
-      <Head><title>Оформление заказа</title></Head>
+      <Head>
+        <title>Оформление заказа | Hedonist</title> {/* ИСПРАВЛЕНО */}
+        <meta name="description" content="Оформление заказа" />
+      </Head>
+
+      {/* Шапка */}
       <header className={styles.header}>
-        <button onClick={() => router.back()} className={styles.backButton}><FaArrowLeft /></button>
+        <button onClick={() => router.back()} className={styles.backButton}>
+          <FaArrowLeft />
+        </button>
         <h1 className={styles.headerTitle}>Оформление заказа</h1>
         <div></div>
       </header>
-      <main className={styles.mainContainer}>
-        <form onSubmit={handleSubmit} className={styles.checkoutForm}>
-          <section className={styles.formSection}>
-            <h2 className={styles.sectionTitle}><FaRegUserCircle/> Адрес и получатель</h2>
-            {savedAddresses.length > 0 && (
-              <div className={styles.formGroup}>
-                <label htmlFor="savedAddress">Выбрать сохраненный адрес</label>
-                <select id="savedAddress" onChange={handleAddressSelect} className={styles.select}>
-                  <option value="">-- Ввести новый адрес --</option>
-                  {savedAddresses.map(addr => (
-                    <option key={addr.id} value={addr.id}>
-                      {`${addr.city}, ${addr.address}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <div className={styles.formGrid}>
-              <div className={styles.formGroup}>
-                <label htmlFor="fullName">ФИО получателя</label>
-                <input type="text" name="fullName" value={deliveryDetails.fullName} onChange={handleInputChange} required />
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="phoneNumber">Номер телефона</label>
-                <input type="tel" name="phoneNumber" value={deliveryDetails.phoneNumber} required onChange={handleInputChange} />
-              </div>
-            </div>
-            <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                    <label htmlFor="country">Страна</label>
-                    <input type="text" name="country" value={deliveryDetails.country} onChange={handleInputChange} required />
+      
+      <form onSubmit={handleSubmit} className={styles.checkoutForm}>
+        {/* Товары в заказе */}
+        <section className={styles.section}>
+          <h2>Ваш заказ</h2>
+          <div className={styles.orderSummary}>
+            {state.cart.map((item, index) => (
+              <div key={index} className={styles.orderItem}>
+                <div className={styles.itemInfo}>
+                  <h4>{item.product.name}</h4>
+                  <p>{item.variant.size} {item.variant.color && `• ${item.variant.color}`}</p>
+                  <span>Количество: {item.quantity}</span>
                 </div>
-                <div className={styles.formGroup}>
-                    <label htmlFor="city">Город</label>
-                    <input type="text" name="city" value={deliveryDetails.city} onChange={handleInputChange} required />
+                <div className={styles.itemPrice}>
+                  ₽{(parseFloat(item.product.currentPrice) * item.quantity).toLocaleString()}
                 </div>
+              </div>
+            ))}
+            <div className={styles.totalRow}>
+              <strong>Итого: ₽{state.cartTotal.toLocaleString()}</strong>
             </div>
-            <div className={styles.formGroup}>
-                <label htmlFor="address">Улица, дом, квартира</label>
-                <input type="text" name="address" value={deliveryDetails.address} onChange={handleInputChange} placeholder="Например, ул. Пушкина, д. 10, кв. 5" required />
-            </div>
-            <div className={styles.formGroup}>
-                <label htmlFor="postalCode">Почтовый индекс</label>
-                <input type="text" name="postalCode" value={deliveryDetails.postalCode} onChange={handleInputChange} required />
-            </div>
-            <div className={styles.checkboxGroup}>
-                <input type="checkbox" name="saveAddress" id="saveAddress" checked={deliveryDetails.saveAddress} onChange={handleInputChange} />
-                <label htmlFor="saveAddress">Сохранить этот адрес для будущих заказов</label>
-            </div>
-          </section>
+          </div>
+        </section>
+        
+        {/* Данные доставки */}
+        <section className={styles.section}>
+          <h2>Данные для доставки</h2>
           
-          <section className={styles.formSection}>
-             <h2 className={styles.sectionTitle}><FaShippingFast /> Способ доставки</h2>
-             <div className={styles.formGroup}>
-                 <label htmlFor="type">Служба доставки</label>
-                 <select name="type" id="type" value={deliveryDetails.type} onChange={handleInputChange} className={styles.select}>
-                     {Object.keys(deliveryServiceRussianNames).map((key) => (
-                         <option key={key} value={key}>
-                             {deliveryServiceRussianNames[key]}
-                         </option>
-                     ))}
-                 </select>
-             </div>
-          </section>
-
-          <section className={styles.formSection}>
-            <h2 className={styles.sectionTitle}><FaCreditCard/> Способ оплаты</h2>
+          {/* Кнопка "Загрузить сохраненные адреса" */}
+          {savedAddresses.length > 0 && (
             <div className={styles.formGroup}>
-              <label htmlFor="paymentMethod">Предпочтительный способ</label>
-              <select name="paymentMethod" id="paymentMethod" value={paymentMethod} onChange={handleInputChange} className={styles.select}>
-                  {Object.keys(paymentMethodRussianNames).map((key) => (
-                      <option key={key} value={key}>
-                          {paymentMethodRussianNames[key]}
-                      </option>
-                  ))}
-              </select>
+              <button 
+                type="button" 
+                onClick={() => setShowSavedAddresses(!showSavedAddresses)}
+                className={styles.loadAddressButton}
+              >
+                <FaSave /> {showSavedAddresses ? 'Скрыть сохраненные адреса' : `Загрузить сохраненные адреса (${savedAddresses.length})`}
+              </button>
             </div>
-          </section>
+          )}
 
-          <section className={styles.formSection}>
-             <h2 className={styles.sectionTitle}>Ваш заказ</h2>
-             <div className={styles.orderSummary}>
-                 {cart.map(item => (
-                     <div key={item.product.id + item.variant.id} className={styles.summaryItem}>
-                         <span>{item.product.name} ({item.variant.size}) x{item.quantity}</span>
-                         <strong>₽{(parseFloat(item.product.currentPrice) * item.quantity).toLocaleString('ru-RU')}</strong>
-                     </div>
-                 ))}
-                 <div className={`${styles.summaryItem} ${styles.summarySubtotal}`}>
-                     <span>Подытог</span>
-                     <strong>₽{cartTotal.toLocaleString('ru-RU')}</strong>
-                 </div>
-                 {personalDiscountPercent > 0 && (
-                     <div className={`${styles.summaryItem} ${styles.summaryDiscount}`}>
-                         <span>Персональная скидка ({personalDiscountPercent}%)</span>
-                         <strong>- ₽{discountAmount.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
-                     </div>
-                 )}
-                 <div className={`${styles.summaryItem} ${styles.summaryTotal}`}>
-                     <span>Итого к оплате</span>
-                     <strong>₽{finalTotal.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
-                 </div>
-             </div>
-          </section>
-
-          <section className={styles.formSection}>
-            <div className={`${styles.checkboxGroup} ${styles.policy}`}>
-               <input type="checkbox" id="agreedToPolicy" checked={agreedToPolicy} onChange={(e) => setAgreedToPolicy(e.target.checked)} />
-               <label htmlFor="agreedToPolicy">Я согласен с тем, что товар не подлежит возврату и обмену.</label>
+          {/* Список сохраненных адресов */}
+          {showSavedAddresses && savedAddresses.length > 0 && (
+            <div className={styles.savedAddressesList}>
+              {savedAddresses.map(addr => (
+                <div key={addr.id} className={styles.savedAddressItem}>
+                  <div className={styles.addressInfo}>
+                    <strong>{addr.fullName}</strong> ({addr.type})<br/>
+                    {addr.address}, {addr.city}{addr.postalCode ? `, ${addr.postalCode}` : ''}<br/>
+                    {addr.phoneNumber}
+                  </div>
+                  <div className={styles.addressActions}>
+                    <button 
+                      type="button" 
+                      onClick={() => applySavedAddress(addr)}
+                      className={styles.applyAddressButton}
+                    >
+                      Выбрать
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => deleteSavedAddress(addr.id)}
+                      className={styles.deleteAddressButton}
+                    >
+                      <FaTrashAlt />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-            {error && <p className={styles.errorMessage}>{error}</p>}
-            <button type="submit" className={styles.submitButton} disabled={loading}>
-              {loading ? (
-                <>
-                  <div className={styles.spinner}></div>
-                  <span>Создаем заказ...</span>
-                </>
-              ) : (
-                <>
-                  <FaPaperPlane/>
-                  <span>Отправить менеджеру</span>
-                </>
-              )}
-            </button>
-            <p className={styles.secureNote}>Вы будете перенаправлены в Telegram для завершения оплаты.</p>
-          </section>
-        </form>
-      </main>
+          )}
+
+          <div className={styles.formGroup}>
+            <label htmlFor="deliveryType">Способ доставки:</label>
+            <select
+              id="deliveryType"
+              value={deliveryDetails.type}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, type: e.target.value as DeliveryService})}
+              required
+              className={styles.formInput}
+            >
+              <option value="SDEK">СДЭК</option>
+              <option value="BOXBERRY">Boxberry</option>
+              <option value="POST_RF">Почта России</option>
+              <option value="FIVE_POST">5Post</option>
+              <option value="YANDEX_PVZ">Яндекс ПВЗ</option>
+              <option value="COURIER">Курьер</option>
+              <option value="OTHER">Другая служба</option>
+            </select>
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="fullName">ФИО получателя:</label>
+            <input
+              type="text"
+              id="fullName"
+              value={deliveryDetails.fullName}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, fullName: e.target.value})}
+              required
+              className={styles.formInput}
+              placeholder="Введите ваше полное имя"
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="phoneNumber">Телефон:</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              value={deliveryDetails.phoneNumber}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, phoneNumber: e.target.value})}
+              required
+              className={styles.formInput}
+              placeholder="+7 (999) 123-45-67"
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="address">Адрес доставки:</label>
+            <textarea
+              id="address"
+              value={deliveryDetails.address}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, address: e.target.value})}
+              required
+              className={styles.formTextarea}
+              placeholder="Укажите полный адрес доставки"
+              rows={3}
+            />
+          </div>
+          
+          <div className={styles.formRow}>
+            <div className={styles.formGroup}>
+              <label htmlFor="city">Город:</label>
+              <input
+                type="text"
+                id="city"
+                value={deliveryDetails.city}
+                onChange={(e) => setDeliveryDetails({...deliveryDetails, city: e.target.value})}
+                required
+                className={styles.formInput}
+                placeholder="Москва"
+              />
+            </div>
+            
+            <div className={styles.formGroup}>
+              <label htmlFor="postalCode">Почтовый индекс:</label>
+              <input
+                type="text"
+                id="postalCode"
+                value={deliveryDetails.postalCode}
+                onChange={(e) => setDeliveryDetails({...deliveryDetails, postalCode: e.target.value})}
+                className={styles.formInput}
+                placeholder="123456"
+              />
+            </div>
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="region">Регион/область (необязательно):</label>
+            <input
+              type="text"
+              id="region"
+              value={deliveryDetails.region}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, region: e.target.value})}
+              className={styles.formInput}
+              placeholder="Московская область"
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label htmlFor="country">Страна:</label>
+            <input
+              type="text"
+              id="country"
+              value={deliveryDetails.country}
+              onChange={(e) => setDeliveryDetails({...deliveryDetails, country: e.target.value})}
+              required
+              className={styles.formInput}
+              placeholder="Россия"
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={deliveryDetails.saveAddress}
+                onChange={(e) => setDeliveryDetails({...deliveryDetails, saveAddress: e.target.checked})}
+                className={styles.checkbox}
+              />
+              <span className={styles.checkboxText}>Сохранить адрес для будущих заказов</span>
+            </label>
+          </div>
+        </section>
+        
+        {/* Способ оплаты */}
+        <section className={styles.section}>
+          <h2>Способ оплаты</h2>
+          
+          <div className={styles.paymentOptions}>
+            <label className={styles.paymentOption}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="TELEGRAM_STARS"
+                checked={paymentMethod === 'TELEGRAM_STARS'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                className={styles.paymentRadio}
+              />
+              <div className={styles.paymentMethod}>
+                <FaCreditCard className={styles.paymentIcon} />
+                <div className={styles.paymentDetails}>
+                  <h3>Наличные при получении</h3>
+                  <p>Оплата наличными курьеру</p>
+                </div>
+              </div>
+            </label>
+
+            <label className={styles.paymentOption}>
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="CARD"
+                checked={paymentMethod === 'CARD'}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
+                className={styles.paymentRadio}
+              />
+              <div className={styles.paymentMethod}>
+                <FaCreditCard className={styles.paymentIcon} />
+                <div className={styles.paymentDetails}>
+                  <h3>Банковский перевод</h3>
+                  <p>Оплата по реквизитам</p>
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className={styles.paymentNote}>
+            <p>После оформления заказа менеджер свяжется с вами для уточнения деталей оплаты и доставки</p>
+          </div>
+        </section>
+        
+        {/* Итого */}
+        <section className={styles.section}>
+          <h2>Итого к оплате</h2>
+          <div className={styles.totalSection}>
+            <div className={styles.totalRow}>
+              <span>Товары ({state.cartCount} шт.):</span>
+              <span>₽{state.cartTotal.toLocaleString()}</span>
+            </div>
+            <div className={styles.totalRow}>
+              <span>Доставка:</span>
+              <span>Уточняется менеджером</span>
+            </div>
+            <div className={`${styles.totalRow} ${styles.finalTotal}`}>
+              <strong>К оплате: ₽{state.cartTotal.toLocaleString()}</strong>
+            </div>
+          </div>
+        </section>
+        
+        {/* Согласие с политикой */}
+        <div className={styles.formGroup}>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={agreedToPolicy}
+              onChange={(e) => setAgreedToPolicy(e.target.checked)}
+              required
+              className={styles.checkbox}
+            />
+            <span className={styles.checkboxText}>
+              Я согласен с <a href="/policy" target="_blank">политикой невозвратности товара</a>
+            </span>
+          </label>
+        </div>
+        
+        <button
+          type="submit"
+          disabled={loading || !agreedToPolicy}
+          className={styles.submitButton}
+        >
+          {loading ? (
+            <>
+              <div className={styles.spinner}></div>
+              Создание заказа...
+            </>
+          ) : (
+            <>
+              <FaTelegram />
+              Оформить заказ
+            </>
+          )}
+        </button>
+
+        <div className={styles.note}>
+          <p>После нажатия на кнопку автоматически откроется чат с менеджером с готовым сообщением о вашем заказе.</p>
+        </div>
+      </form>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import AdminLayout from '../../components/AdminLayout';
 import styles from '../../styles/AdminUsers.module.css';
 import { User } from '@prisma/client';
+import { useAuth } from '../../components/AuthProvider'; // Импортируем useAuth
 
 // Определяем расширенный тип для пользователя с дополнительными данными
 type UserWithData = User & {
@@ -13,10 +14,21 @@ type UserWithData = User & {
 
 export default function AdminUsersPage() {
   const router = useRouter();
+  const { user, isLoading, isAdmin } = useAuth(); // Получаем user, isLoading и isAdmin из контекста
   const [users, setUsers] = useState<UserWithData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Добавляем useEffect для проверки аутентификации и админ-статуса
+  useEffect(() => {
+    if (isLoading) {
+      return; // Ждем завершения загрузки аутентификации
+    }
+    if (!user || !isAdmin) {
+      router.push('/login'); // Или другая страница для неавторизованных/неадминов
+    }
+  }, [user, isLoading, isAdmin, router]);
 
   const fetchUsers = useCallback(async (query: string) => {
     setLoading(true);
@@ -36,12 +48,26 @@ export default function AdminUsersPage() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchUsers(searchTerm);
-    }, 300);
+    // Выполняем fetchUsers только если пользователь является админом и аутентификация завершена
+    if (!isLoading && isAdmin) {
+      const timer = setTimeout(() => {
+        fetchUsers(searchTerm);
+      }, 300);
 
-    return () => clearTimeout(timer);
-  }, [searchTerm, fetchUsers]);
+      return () => clearTimeout(timer);
+    }
+  }, [searchTerm, fetchUsers, isLoading, isAdmin]);
+
+  // Показывать сообщение о загрузке или доступе, пока идет проверка
+  if (isLoading || !user || !isAdmin) {
+    return (
+      <AdminLayout>
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          {isLoading ? 'Проверка доступа...' : 'У вас нет доступа к этой странице.'}
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -101,7 +127,7 @@ export default function AdminUsersPage() {
                             <span>Username:</span>
                             <strong>{user.username ? `@${user.username}` : 'N/A'}</strong>
                         </div>
-                         <div className={styles.cardRow}>
+                           <div className={styles.cardRow}>
                             <span>Приглашено:</span>
                             <strong>{user._count.referredUsers} чел.</strong>
                         </div>

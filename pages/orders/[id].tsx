@@ -1,11 +1,13 @@
-// pages/orders/[id].tsx
-import { useEffect, useState } from 'react';
+// pages/orders/[id].tsx - ИСПРАВЛЕНО
+import { useEffect, useState, useCallback } from 'react'; // Импортировали useCallback
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Image from 'next/image';
 import styles from '../../styles/MyOrders.module.css';
 import { FaArrowLeft, FaCopy, FaPaperPlane } from 'react-icons/fa';
 import { Order, OrderStatus, Comment, Role, OrderItem, ProductVariant, DeliveryService } from '@prisma/client';
 import BottomNav from '../../components/BottomNav';
+import { useAuth } from '../../components/AuthProvider'; // Импортируем useAuth
 
 // Карты для перевода на русский язык
 const orderStatusRussianNames: Record<OrderStatus, string> = {
@@ -38,30 +40,49 @@ type OrderDetail = Order & {
 export default function OrderDetailPage() {
     const router = useRouter();
     const { id } = router.query;
+    const { user, isAuthenticated, isLoading } = useAuth(); // Получаем user, isAuthenticated, isLoading
     const [order, setOrder] = useState<OrderDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [copySuccess, setCopySuccess] = useState('');
     const [newComment, setNewComment] = useState('');
     const [isSending, setIsSending] = useState(false);
 
-    const fetchOrderDetails = async () => {
+    // Обернули функцию в useCallback, чтобы ее ссылка была стабильной
+    const fetchOrderDetails = useCallback(async () => {
+        // Ждем завершения загрузки аутентификации и наличия пользователя
+        if (isLoading || !isAuthenticated || !user) {
+            setLoading(isLoading); // Пока авторизация загружается, показываем загрузку
+            return;
+        }
         if (!id || typeof id !== 'string') return;
+
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/orders/${id}`);
-            if (!res.ok) throw new Error('Ошибка загрузки заказа');
+            const token = localStorage.getItem('authToken');
+            // ИСПРАВЛЕНО: Теперь запрашиваем у пользовательского API, а не админского
+            const res = await fetch(`/api/orders/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+            if (!res.ok) {
+              const errorData = await res.json();
+              throw new Error(errorData.message || 'Ошибка загрузки заказа');
+            }
             const data = await res.json();
             setOrder(data);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error(err);
+            alert(`Ошибка: ${err instanceof Error ? err.message : 'Неизвестная ошибка'}`);
         } finally {
             setLoading(false);
         }
-    };
+    }, [id, isLoading, isAuthenticated, user]); // Добавлены зависимости для useCallback
 
+    // Теперь в зависимостях useEffect указываем саму функцию
     useEffect(() => {
         fetchOrderDetails();
-    }, [id]);
+    }, [fetchOrderDetails]);
 
     const handleCopy = (text: string | null | undefined) => {
         if (!text) return;
@@ -75,23 +96,36 @@ export default function OrderDetailPage() {
         if (newComment.trim() === '' || !id) return;
         setIsSending(true);
         try {
+            const token = localStorage.getItem('authToken'); // Получаем токен для отправки комментария
             const res = await fetch(`/api/orders/${id}/comments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`, // Добавляем заголовок авторизации
+                },
                 body: JSON.stringify({ text: newComment }),
             });
-            if (!res.ok) throw new Error('Не удалось отправить комментарий');
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Не удалось отправить комментарий');
+            }
             setNewComment('');
             await fetchOrderDetails(); // Обновляем чат
-        } catch (error) {
+        } catch (error: unknown) {
             console.error(error);
-            alert('Ошибка при отправке комментария');
+            alert(`Ошибка при отправке комментария: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
         } finally {
             setIsSending(false);
         }
     };
 
     if (loading) return <div className={styles.pageContainer}><p style={{textAlign: 'center', paddingTop: '2rem'}}>Загрузка...</p></div>;
+    
+    // Если не авторизован после загрузки, показать сообщение
+    if (!isAuthenticated) {
+        return <div className={styles.pageContainer}><p style={{textAlign: 'center', paddingTop: '2rem'}}>Для просмотра заказа необходима авторизация.</p></div>;
+    }
+
     if (!order) return <div className={styles.pageContainer}><p style={{textAlign: 'center', paddingTop: '2rem'}}>Не удалось загрузить детали заказа.</p></div>;
 
     return (
@@ -132,7 +166,7 @@ export default function OrderDetailPage() {
                     {order.items && order.items.length > 0 && (
                         <div className={styles.detailCard}>
                             <h3>Состав заказа</h3>
-                            {order.items.map(item => (
+                            {order.items.map((item: OrderItem & { productVariant: ProductVariant | null }) => ( // ИСПРАВЛЕНО: удален неиспользуемый 'index'
                                 <div key={item.id} className={styles.itemDetail}>
                                     <p>{item.productName} ({item.productVariant?.size}, {item.productVariant?.color || 'N/A'})</p>
                                     <span>{item.quantity} шт.</span>
@@ -145,12 +179,21 @@ export default function OrderDetailPage() {
                         <h3>Диалог с менеджером</h3>
                         <div className={styles.chatContainer}>
                             {order.comments && order.comments.length > 0 ? (
-                                order.comments.map(comment => (
+                                order.comments.map((comment: Comment & { authorRole: Role }) => ( // ИСПРАВЛЕНО: удален неиспользуемый 'index'
                                     <div key={comment.id} className={`${styles.chatBubble} ${comment.authorRole === 'USER' ? styles.userBubble : styles.adminBubble}`}>
                                         {comment.text && <p className={styles.chatText}>{comment.text}</p>}
                                         {comment.imageUrls && comment.imageUrls.length > 0 && (
                                             <div className={styles.chatImages}>
-                                                {comment.imageUrls.map((url, i) => <img key={i} src={url} alt={`Изображение ${i+1}`} className={styles.chatImage} />)}
+                                                {comment.imageUrls.map((url: string, i: number) => ( // 'i' используется, поэтому оставляем
+                                                    <Image 
+                                                        key={i} 
+                                                        src={url} 
+                                                        alt={`Изображение ${i+1}`} 
+                                                        className={styles.chatImage}
+                                                        width={200}
+                                                        height={200}
+                                                    />
+                                                ))}
                                             </div>
                                         )}
                                         <span className={styles.chatTimestamp}>{new Date(comment.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -181,3 +224,4 @@ export default function OrderDetailPage() {
         </>
     );
 }
+

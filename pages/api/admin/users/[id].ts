@@ -16,6 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       res.status(200).json(user);
     } catch (error) {
+      console.error(error);
       res.status(500).json({ message: 'Failed to fetch user' });
     }
   } else if (req.method === 'PUT') {
@@ -40,8 +41,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error(`Ошибка при обновлении пользователя ${id}:`, error);
       res.status(500).json({ message: 'Failed to update user' });
     }
+  } else if (req.method === 'DELETE') {
+    try {
+      await prisma.user.delete({
+        where: { id },
+      });
+      res.status(204).end(); // Успешное удаление, нет содержимого для возврата
+    } catch (error) {
+      console.error(`Ошибка при удалении пользователя ${id}:`, error);
+      res.status(500).json({ message: 'Failed to delete user' });
+    }
   } else {
-    res.setHeader('Allow', ['GET', 'PUT']);
+    res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

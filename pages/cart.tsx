@@ -1,7 +1,9 @@
-// pages/cart.tsx
+
+// pages/cart.tsx - ИСПРАВЛЕНО
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image'; // Заменили img на Image
 import styles from '../styles/Cart.module.css';
 import { useApp } from '../contexts/AppContext';
 import {
@@ -132,10 +134,12 @@ export default function CartPage() {
                 <div className={styles.itemContent}>
                   <Link href={`/products/${item.product.id}`}>
                     {item.product.images && item.product.images.length > 0 ? (
-                      <img
+                      <Image
                         src={item.product.images[0]}
                         alt={item.product.name}
                         className={styles.itemImage}
+                        width={100}
+                        height={100}
                       />
                     ) : (
                       <div className={styles.noImagePlaceholder}>

@@ -3,23 +3,23 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../lib/prisma';
 import { OrderStatus } from '@prisma/client';
 
-const checkAdminAuth = (req: NextApiRequest): boolean => {
+const checkAdminAuth = (): boolean => {
   return !!process.env.ADMIN_TELEGRAM_ID;
 };
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (!checkAdminAuth(req)) {
+export default async function handler(_req: NextApiRequest, res: NextApiResponse) {
+  if (!checkAdminAuth()) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  if (req.method !== 'GET') {
+  if (_req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+    res.status(405).end(`Method ${_req.method} Not Allowed`);
     return;
   }
 
   try {
-    // --- Получаем все заказы, которые влияют на финансовые показатели ---
+    // Получаем все заказы, которые влияют на финансовые показатели
     const relevantOrders = await prisma.order.findMany({
       where: {
         status: {
@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       },
     });
 
-    // --- Считаем новые, более точные финансовые показатели ---
+    // Считаем новые, более точные финансовые показатели
     let totalRevenue = 0;
     let totalCostOfGoods = 0;
     let totalDeliveryCosts = 0;
@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Чистая прибыль = Выручка - Себестоимость товаров - Затраты на доставку
     const netProfit = totalRevenue - totalCostOfGoods - totalDeliveryCosts;
 
-    // --- Ваша существующая логика для остальных виджетов ---
+    // Остальная логика для виджетов
     const totalOrdersCount = await prisma.order.count();
     const ordersByStatus = await prisma.order.groupBy({
       by: ['status'],
@@ -64,20 +64,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return acc;
     }, {} as Record<string, number>);
 
-    // --- Отправляем объединенный результат ---
+    // Отправляем объединенный результат
     res.status(200).json({
       totalOrders: totalOrdersCount,
       ordersByStatus: statusCounts,
       totalRevenue: totalRevenue,
-      totalProfit: netProfit, // <-- Отправляем новую, рассчитанную прибыль
+      totalProfit: netProfit,
       newUsersLast30Days: newUsersCount,
-      // Дополнительные данные для наглядности
       totalCostOfGoods,
       totalDeliveryCosts
     });
 
   } catch (error) {
     console.error('Failed to fetch dashboard stats:', error);
-    res.status(500).json({ message: 'Failed to fetch dashboard stats', error: (error instanceof Error) ? error.message : 'Unknown error' });
+    res.status(500).json({ 
+      message: 'Failed to fetch dashboard stats', 
+      error: (error instanceof Error) ? error.message : 'Unknown error' 
+    });
   }
 }

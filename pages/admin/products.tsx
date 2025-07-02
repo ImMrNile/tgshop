@@ -2,9 +2,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import AdminLayout from '../../components/AdminLayout';
-import styles from '../../styles/AdminProducts.module.css'; // Используем новые стили
+import styles from '../../styles/AdminProducts.module.css';
 import { FaEdit, FaTrashAlt, FaPlus } from 'react-icons/fa';
+import { useAuth } from '../../components/AuthProvider'; // <-- Импортируем useAuth
 
 interface ProductVariant {
   id: string;
@@ -27,23 +29,37 @@ interface Product {
 
 export default function AdminProductsPage() {
   const router = useRouter();
+  const { user, isLoading, isAdmin } = useAuth(); // <-- Получаем user, isLoading и isAdmin
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true); // Переименовано, чтобы избежать конфликта
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/products');
-      if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
-      const data = await res.json();
-      setProducts(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить товары.');
-    } finally {
-      setLoading(false);
+  // <-- Добавляем useEffect для проверки аутентификации и админ-статуса
+  useEffect(() => {
+    if (isLoading) {
+      return; // Ждем завершения загрузки аутентификации
     }
-  }, []);
+    if (!user || !isAdmin) {
+      router.push('/login'); // Перенаправляем, если не админ или не авторизован
+    }
+  }, [user, isLoading, isAdmin, router]);
+
+  const fetchProducts = useCallback(async () => {
+    // <-- Выполняем запрос только если пользователь является админом
+    if (!isLoading && isAdmin) {
+      setLoadingProducts(true);
+      try {
+        const res = await fetch('/api/admin/products');
+        if (!res.ok) throw new Error(`Ошибка: ${res.status}`);
+        const data = await res.json();
+        setProducts(data);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Не удалось загрузить товары.');
+      } finally {
+        setLoadingProducts(false);
+      }
+    }
+  }, [isLoading, isAdmin]); // <-- Добавляем зависимости
 
   useEffect(() => {
     fetchProducts();
@@ -65,7 +81,19 @@ export default function AdminProductsPage() {
     }
   };
 
-  if (loading) return <AdminLayout title="Товары"><div style={{textAlign: 'center', padding: '1rem'}}>Загрузка товаров...</div></AdminLayout>;
+  // <-- Условный рендеринг для проверки доступа
+  if (isLoading || !user || !isAdmin) {
+    return (
+      <AdminLayout title="Товары">
+        <div style={{ textAlign: 'center', padding: '1rem' }}>
+          {isLoading ? 'Проверка доступа...' : 'У вас нет доступа к этой странице.'}
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Остальная логика загрузки и ошибок
+  if (loadingProducts) return <AdminLayout title="Товары"><div style={{textAlign: 'center', padding: '1rem'}}>Загрузка товаров...</div></AdminLayout>;
   if (error) return <AdminLayout title="Товары"><div style={{textAlign: 'center', padding: '1rem', color: 'red'}}>Ошибка: {error}</div></AdminLayout>;
 
   return (
@@ -99,7 +127,13 @@ export default function AdminProductsPage() {
                   {products.map((product) => (
                     <tr key={product.id}>
                       <td className={styles.tableCell}>
-                        <img src={product.images?.[0] || 'https://via.placeholder.com/50'} alt={product.name} className={styles.productImage} />
+                        <Image 
+                          src={product.images?.[0] || 'https://via.placeholder.com/50'} 
+                          alt={product.name} 
+                          className={styles.productImage}
+                          width={50}
+                          height={50}
+                        />
                       </td>
                       <td className={styles.tableCell}>{product.name}</td>
                       <td className={styles.tableCell}>{product.brand || 'Не указан'}</td>
@@ -108,7 +142,7 @@ export default function AdminProductsPage() {
                         {product.variants.map(v => `${v.color ? v.color + '/' : ''}${v.size}: ${v.stock}`).join('; ')}
                       </td>
                       <td className={styles.tableCell}>
-                        <button onClick={() => router.push(`/admin/products/edit/${product.id}`)} className={`${styles.actionButton} ${styles.editButton}`}>
+                        <button onClick={() => router.push(`/admin/products/${product.id}/edit`)} className={`${styles.actionButton} ${styles.editButton}`}>
                            <FaEdit />
                         </button>
                         <button onClick={() => handleDelete(product.id)} className={`${styles.actionButton} ${styles.deleteButton}`}>
@@ -126,7 +160,13 @@ export default function AdminProductsPage() {
               {products.map((product) => (
                 <div key={product.id} className={styles.productCard}>
                   <div className={styles.cardHeader}>
-                    <img src={product.images?.[0] || 'https://via.placeholder.com/60'} alt={product.name} className={styles.cardImage} />
+                    <Image 
+                      src={product.images?.[0] || 'https://via.placeholder.com/60'} 
+                      alt={product.name} 
+                      className={styles.cardImage}
+                      width={60}
+                      height={60}
+                    />
                     <div className={styles.cardInfo}>
                       <h3 className={styles.cardTitle}>{product.name}</h3>
                       <p className={styles.cardInfo}>Бренд: {product.brand || 'Не указан'}</p>
@@ -144,7 +184,7 @@ export default function AdminProductsPage() {
                     </ul>
                   </div>
                   <div className={styles.cardActions}>
-                    <button onClick={() => router.push(`/admin/products/edit/${product.id}`)} className={`${styles.cardActionButton} ${styles.editButton}`}>
+                    <button onClick={() => router.push(`/admin/products/${product.id}/edit`)} className={`${styles.cardActionButton} ${styles.editButton}`}>
                       <FaEdit /> Редактировать
                     </button>
                     <button onClick={() => handleDelete(product.id)} className={`${styles.cardActionButton} ${styles.deleteButton}`}>

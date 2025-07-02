@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import styles from '../styles/Cart.module.css'; // Используем те же стили
+import Image from 'next/image';
+import styles from '../styles/Cart.module.css';
 import { useApp } from '../contexts/AppContext';
 import { 
   FaArrowLeft, 
@@ -20,8 +21,7 @@ export default function FavoritesPage() {
   const { 
     state, 
     removeFromFavorites, 
-    addToCart,
-    isInFavorites
+    addToCart
   } = useApp();
   
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
@@ -47,7 +47,6 @@ export default function FavoritesPage() {
 
     setAddingToCart(productId);
     
-    // Имитируем добавление в корзину
     try {
       await new Promise(resolve => setTimeout(resolve, 500));
       addToCart(product, availableVariant, 1);
@@ -57,17 +56,19 @@ export default function FavoritesPage() {
       notification.className = 'notification';
       notification.innerHTML = `
         <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
         </svg>
         Товар добавлен в корзину!
       `;
       document.body.appendChild(notification);
       
       setTimeout(() => {
-        document.body.removeChild(notification);
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
       }, 3000);
       
-    } catch (error) {
+    } catch {
       alert('Ошибка при добавлении в корзину');
     } finally {
       setAddingToCart(null);
@@ -95,7 +96,6 @@ export default function FavoritesPage() {
             Избранное
           </h1>
           <div className={styles.headerActions}>
-            {/* Пустой div для выравнивания */}
             <div></div>
           </div>
         </header>
@@ -179,10 +179,13 @@ export default function FavoritesPage() {
                   <Link href={`/products/${product.id}`}>
                     <div style={{ position: 'relative' }}>
                       {product.images && product.images.length > 0 ? (
-                        <img 
+                        <Image 
                           src={product.images[0]} 
                           alt={product.name}
+                          width={120}
+                          height={120}
                           className={styles.itemImage}
+                          style={{ objectFit: 'cover' }}
                         />
                       ) : (
                         <div className={styles.noImagePlaceholder}>
@@ -275,7 +278,14 @@ export default function FavoritesPage() {
                     >
                       {addingToCart === product.id ? (
                         <>
-                          <div className="spinner" style={{ width: '16px', height: '16px' }}></div>
+                          <div className="spinner" style={{ 
+                            width: '16px', 
+                            height: '16px',
+                            border: '2px solid rgba(255, 255, 255, 0.3)',
+                            borderTop: '2px solid white',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite'
+                          }}></div>
                           Добавление...
                         </>
                       ) : isAvailable ? (
@@ -317,6 +327,41 @@ export default function FavoritesPage() {
           </Link>
         </div>
       </main>
+
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          padding: 12px 20px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 600;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+          z-index: 1000;
+          animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

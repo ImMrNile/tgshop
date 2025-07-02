@@ -1,239 +1,474 @@
 /* pages/admin/Dashboard.module.css */
 
-
-/* Общие стили для контейнера дашборда */
-
 .dashboardContainer {
-    background-color: white;
-    padding: 1rem;
-    /* Уменьшаем базовый padding для мобилок */
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-    text-align: center;
+    padding: 0;
+    position: relative;
+    min-height: 100vh;
 }
 
-@media (min-width: 768px) {
-    /* Возвращаем больший padding для десктопа */
-    .dashboardContainer {
-        padding: 1.5rem;
+.dashboardContainer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 15% 25%, rgba(138, 43, 226, 0.08) 0%, transparent 50%), radial-gradient(circle at 85% 75%, rgba(30, 144, 255, 0.08) 0%, transparent 50%), radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 50%);
+    pointer-events: none;
+    animation: dashboardPulse 20s ease-in-out infinite;
+}
+
+@keyframes dashboardPulse {
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
     }
 }
 
 .dashboardTitle {
-    font-size: 1.5rem;
-    /* text-3xl -> text-2xl для мобилок */
-    font-weight: bold;
-    color: #1f2937;
-    margin-bottom: 1rem;
-    /* mb-6 -> mb-4 для мобилок */
-}
-
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .dashboardTitle {
-        font-size: 1.875rem;
-        margin-bottom: 1.5rem;
-    }
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #8a2be2 50%, #1e90ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 30px rgba(138, 43, 226, 0.3);
+    position: relative;
+    z-index: 2;
 }
 
 .dashboardGreeting {
-    color: #4b5563;
-    margin-bottom: 1.5rem;
-    /* mb-8 -> mb-6 для мобилок */
-    font-size: 0.95rem;
-    /* Немного уменьшаем шрифт */
+    font-size: 1.25rem;
+    color: #8b949e;
+    margin-bottom: 2.5rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    position: relative;
+    z-index: 2;
 }
-
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .dashboardGreeting {
-        font-size: 1rem;
-        margin-bottom: 2rem;
-    }
-}
-
-
-/* Сетка для карточек статистики */
 
 .statsGrid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    /* ИЗМЕНЕНО: 2 колонки на мобильных */
-    gap: 0.75rem;
-    /* Уменьшаем базовый gap для мобилок */
-    margin-bottom: 1.5rem;
-    /* mb-12 -> mb-6 для мобилок */
-}
-
-@media (min-width: 640px) {
-    /* sm breakpoint (если есть, можно оставить 2, если нет, можно убрать) */
-    .statsGrid {
-        gap: 1rem;
-    }
-}
-
-@media (min-width: 768px) {
-    /* md:grid-cols-2 */
-    .statsGrid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
-        /* Возвращаем больший gap для десктопа */
-        margin-bottom: 3rem;
-    }
-}
-
-@media (min-width: 1024px) {
-    /* lg:grid-cols-3 */
-    .statsGrid {
-        grid-template-columns: repeat(3, 1fr);
-    }
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+    position: relative;
+    z-index: 2;
 }
 
 .statCard {
-    background-color: #f9fafb;
-    padding: 0.75rem;
-    /* Уменьшаем padding в карточках для мобилок */
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, rgba(13, 17, 23, 0.8) 0%, rgba(22, 27, 34, 0.8) 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-@media (min-width: 768px) {
-    /* Возвращаем больший padding для десктопа */
-    .statCard {
-        padding: 1.5rem;
-    }
+.statCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.05) 0%, rgba(30, 144, 255, 0.05) 100%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.statCard::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%);
+    transform: rotate(-45deg);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+}
+
+.statCard:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 50px rgba(138, 43, 226, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    border-color: rgba(138, 43, 226, 0.3);
+}
+
+.statCard:hover::before {
+    opacity: 1;
+}
+
+.statCard:hover::after {
+    transform: rotate(-45deg) translate(100%, 100%);
+}
+
+.statCardIcon {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #8a2be2 0%, #1e90ff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.4s ease;
+    position: relative;
+    z-index: 2;
+}
+
+.statCard:hover .statCardIcon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 12px 30px rgba(138, 43, 226, 0.4), 0 0 40px rgba(138, 43, 226, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 .statCardTitle {
-    font-size: 0.9rem;
-    /* text-xl -> text-lg для мобилок */
+    font-size: 1.1rem;
     font-weight: 600;
-    color: #4f46e5;
-    margin-bottom: 0.25rem;
-    /* mb-2 -> mb-1 для мобилок */
-}
-
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .statCardTitle {
-        font-size: 1.125rem;
-        margin-bottom: 0.5rem;
-    }
+    color: #e6edf3;
+    margin: 0 0 1rem 0;
+    letter-spacing: 0.02em;
+    position: relative;
+    z-index: 2;
 }
 
 .statCardValue {
-    font-size: 1.75rem;
-    /* text-4xl -> text-2xl/3xl для мобилок */
-    font-weight: bold;
-    color: #1f2937;
-}
-
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .statCardValue {
-        font-size: 2.25rem;
-    }
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #8a2be2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 0.5rem 0;
+    position: relative;
+    z-index: 2;
+    text-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
 }
 
 .statCardDescription {
-    font-size: 0.75rem;
-    /* text-sm -> text-xs для мобилок */
-    color: #6b7280;
-    margin-top: 0.125rem;
+    font-size: 0.9rem;
+    color: #8b949e;
+    margin: 0;
+    font-weight: 500;
+    position: relative;
+    z-index: 2;
 }
 
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .statCardDescription {
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
+.quickLinksSection {
+    margin-top: 3rem;
+    position: relative;
+    z-index: 2;
 }
 
+.quickLinksTitle {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #e6edf3;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
-/* Стили для секции быстрых ссылок - их тоже можно немного уменьшить */
+.quickLinksTitle::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(138, 43, 226, 0.5) 0%, transparent 100%);
+}
 
 .quickLinksGrid {
     display: grid;
-    grid-template-columns: 1fr;
-    /* Остаются 1 колонка на очень маленьких */
-    gap: 1rem;
-    /* Уменьшаем gap */
-    margin-top: 1rem;
-    /* Уменьшаем margin-top */
-}
-
-@media (min-width: 640px) {
-    /* sm:grid-cols-2 */
-    .quickLinksGrid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 768px) {
-    /* md:grid-cols-2 */
-    .quickLinksGrid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.5rem;
-        /* Возвращаем больший gap для десктопа */
-        margin-top: 1.5rem;
-        /* Возвращаем больший margin-top */
-    }
-}
-
-@media (min-width: 1024px) {
-    /* lg:grid-cols-3 */
-    .quickLinksGrid {
-        grid-template-columns: repeat(3, 1fr);
-    }
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
 }
 
 .quickLinkCard {
     display: block;
-    padding: 1rem;
-    /* Уменьшаем padding */
-    border-radius: 0.5rem;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease-in-out;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(13, 17, 23, 0.8) 0%, rgba(22, 27, 34, 0.8) 100%);
+    border-radius: 16px;
     text-decoration: none;
+    color: #e6edf3;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    font-weight: 600;
+    backdrop-filter: blur(20px);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-@media (min-width: 768px) {
-    /* Возвращаем больший padding для десктопа */
-    .quickLinkCard {
-        padding: 1.5rem;
-    }
+.quickLinkCard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent 0%, rgba(138, 43, 226, 0.1) 50%, transparent 100%);
+    transition: left 0.6s ease;
+}
+
+.quickLinkCard::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #8a2be2 0%, #1e90ff 100%);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+}
+
+.quickLinkCard:hover {
+    background: linear-gradient(135deg, rgba(22, 27, 34, 0.9) 0%, rgba(33, 38, 45, 0.9) 100%);
+    border-color: rgba(138, 43, 226, 0.3);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 0 40px rgba(138, 43, 226, 0.2);
+    color: #ffffff;
+}
+
+.quickLinkCard:hover::before {
+    left: 0;
+}
+
+.quickLinkCard:hover::after {
+    transform: scaleX(1);
+}
+
+.quickLinkIcon {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: #8a2be2;
+    transition: all 0.3s ease;
+}
+
+.quickLinkCard:hover .quickLinkIcon {
+    color: #1e90ff;
+    transform: scale(1.2);
 }
 
 .quickLinkTitle {
-    font-size: 1.125rem;
-    /* text-xl -> text-lg для мобилок */
-    font-weight: 600;
-    color: #4f46e5;
+    font-size: 1.1rem;
+    font-weight: 700;
     margin-bottom: 0.5rem;
-}
-
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .quickLinkTitle {
-        font-size: 1.25rem;
-    }
+    transition: all 0.3s ease;
 }
 
 .quickLinkDescription {
-    color: #374151;
-    font-size: 0.8rem;
-    /* text-sm -> text-xs для мобилок */
+    font-size: 0.85rem;
+    color: #8b949e;
+    line-height: 1.5;
+    transition: all 0.3s ease;
 }
 
-@media (min-width: 768px) {
-    /* Возвращаем больший размер для десктопа */
-    .quickLinkDescription {
-        font-size: 0.875rem;
+.quickLinkCard:hover .quickLinkDescription {
+    color: #c9d1d9;
+}
+
+
+/* Анимация появления */
+
+@keyframes cardSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.statCard {
+    animation: cardSlideIn 0.6s ease-out forwards;
+}
+
+.statCard:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.statCard:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.statCard:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.statCard:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+.quickLinkCard {
+    animation: cardSlideIn 0.6s ease-out forwards;
+}
+
+.quickLinkCard:nth-child(1) {
+    animation-delay: 0.5s;
+}
+
+.quickLinkCard:nth-child(2) {
+    animation-delay: 0.6s;
+}
+
+.quickLinkCard:nth-child(3) {
+    animation-delay: 0.7s;
+}
+
+.quickLinkCard:nth-child(4) {
+    animation-delay: 0.8s;
+}
+
+
+/* Специальные эффекты */
+
+@keyframes floatingGlow {
+    0%,
+    100% {
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 40px rgba(138, 43, 226, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    50% {
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4), 0 0 60px rgba(138, 43, 226, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+}
+
+.statCard:nth-child(even) {
+    animation: cardSlideIn 0.6s ease-out forwards, floatingGlow 4s ease-in-out infinite 2s;
+}
+
+
+/* Эффект частиц */
+
+.dashboardContainer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.1), transparent), radial-gradient(2px 2px at 40px 70px, rgba(138, 43, 226, 0.2), transparent), radial-gradient(1px 1px at 90px 40px, rgba(30, 144, 255, 0.2), transparent), radial-gradient(1px 1px at 130px 80px, rgba(255, 255, 255, 0.1), transparent), radial-gradient(2px 2px at 160px 30px, rgba(138, 43, 226, 0.1), transparent);
+    background-repeat: repeat;
+    background-size: 200px 100px;
+    animation: particleFloat 20s linear infinite;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+@keyframes particleFloat {
+    0% {
+        transform: translateY(0px) translateX(0px);
+    }
+    33% {
+        transform: translateY(-10px) translateX(5px);
+    }
+    66% {
+        transform: translateY(5px) translateX(-5px);
+    }
+    100% {
+        transform: translateY(0px) translateX(0px);
+    }
+}
+
+
+/* Адаптивность */
+
+@media (max-width: 768px) {
+    .dashboardTitle {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    .dashboardGreeting {
+        font-size: 1rem;
+        margin-bottom: 2rem;
+    }
+    .statsGrid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    .statCard {
+        padding: 1.5rem;
+    }
+    .statCardIcon {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .statCardValue {
+        font-size: 2rem;
+    }
+    .quickLinksGrid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    .quickLinkCard {
+        padding: 1.25rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboardTitle {
+        font-size: 1.75rem;
+    }
+    .statCard {
+        padding: 1.25rem;
+    }
+    .statCardIcon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    .statCardValue {
+        font-size: 1.75rem;
+    }
+    .quickLinkCard {
+        padding: 1rem;
+    }
+}
+
+
+/* Темная тема скроллбара */
+
+.dashboardContainer::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dashboardContainer::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}
+
+.dashboardContainer::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #8a2be2 0%, #1e90ff 100%);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.dashboardContainer::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #9932cc 0%, #4169e1 100%);
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
 }

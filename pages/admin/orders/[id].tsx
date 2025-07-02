@@ -1,47 +1,76 @@
 // pages/admin/orders/[id].tsx
-import { useEffect, useState, useCallback, ChangeEvent } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import AdminLayout from '../../../components/AdminLayout';
 import styles from '../../../styles/AdminOrders.module.css';
-import { Order, OrderStatus, Comment as CommentType, Role, DeliveryService, User, OrderItem, ProductVariant } from '@prisma/client';
+import { Order, OrderStatus, Comment as CommentType, Role, User, OrderItem } from '@prisma/client';
+import { useAuth } from '../../../components/AuthProvider'; // <-- Импортируем useAuth
 
-const orderStatusRussianNames: Record<OrderStatus, string> = { PENDING: 'В ожидании', PAID: 'Оплачен', PROCESSING: 'В обработке', SHIPPED: 'Отправлен', DELIVERED: 'Доставлен', CANCELLED: 'Отменен', REFUNDED: 'Возвращен' };
-const deliveryServiceRussianNames: Record<DeliveryService, string> = { SDEK: 'СДЭК', BOXBERRY: 'Boxberry', POST_RF: 'Почта России', YANDEX_PVZ: 'Яндекс Доставка (ПВЗ)', FIVE_POST: '5Post', COURIER: 'Курьер', OTHER: 'Другая служба' };
+const orderStatusRussianNames: Record<OrderStatus, string> = { 
+  PENDING: 'В ожидании', 
+  PAID: 'Оплачен', 
+  PROCESSING: 'В обработке', 
+  SHIPPED: 'Отправлен', 
+  DELIVERED: 'Доставлен', 
+  CANCELLED: 'Отменен', 
+  REFUNDED: 'Возвращен' 
+};
 
-type FullOrderItem = OrderItem & { product: { images: string[] } | null; productVariant: { color: string | null; size: string } | null; };
-type FullOrder = Order & { user: User | null; items: FullOrderItem[]; comments: (CommentType & {authorRole: Role})[] };
+type FullOrderItem = OrderItem & { 
+  product: { images: string[] } | null; 
+  productVariant: { color: string | null; size: string } | null; 
+};
+type FullOrder = Order & { 
+  user: User | null; 
+  items: FullOrderItem[]; 
+  comments: (CommentType & {authorRole: Role})[] 
+};
 
 export default function AdminOrderDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   
+  const { user, isLoading, isAdmin } = useAuth(); // <-- Получаем user, isLoading и isAdmin
   const [order, setOrder] = useState<FullOrder | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loadingOrder, setLoadingOrder] = useState(true); // Переименовано
   const [error, setError] = useState<string | null>(null);
-
   const [status, setStatus] = useState<OrderStatus>(OrderStatus.PENDING);
   const [deliveryCost, setDeliveryCost] = useState('');
   const [trackingNumber, setTrackingNumber] = useState('');
   const [newCommentText, setNewCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // <-- Добавляем useEffect для проверки аутентификации и админ-статуса
+  useEffect(() => {
+    if (isLoading) {
+      return; // Ждем завершения загрузки аутентификации
+    }
+    if (!user || !isAdmin) {
+      router.push('/login'); // Перенаправляем, если не админ или не авторизован
+    }
+  }, [user, isLoading, isAdmin, router]);
+
   const fetchOrder = useCallback(async () => {
     if (!id) return;
-    try {
-      setLoading(true);
-      const res = await fetch(`/api/admin/orders/${id}`);
-      if (!res.ok) throw new Error('Не удалось загрузить заказ');
-      const data = await res.json();
-      setOrder(data);
-      setStatus(data.status);
-      setDeliveryCost(data.deliveryCostPaidByAdmin?.toString() || '');
-      setTrackingNumber(data.trackingNumber || '');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Произошла ошибка");
-    } finally {
-      setLoading(false);
+    // <-- Выполняем запрос только если пользователь является админом
+    if (!isLoading && isAdmin) {
+      setLoadingOrder(true);
+      try {
+        const res = await fetch(`/api/admin/orders/${id}`);
+        if (!res.ok) throw new Error('Не удалось загрузить заказ');
+        const data = await res.json();
+        setOrder(data);
+        setStatus(data.status);
+        setDeliveryCost(data.deliveryCostPaidByAdmin?.toString() || '');
+        setTrackingNumber(data.trackingNumber || '');
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Произошла ошибка");
+      } finally {
+        setLoadingOrder(false);
+      }
     }
-  }, [id]);
+  }, [id, isLoading, isAdmin]); // <-- Добавляем зависимости
 
   useEffect(() => {
     fetchOrder();
@@ -84,7 +113,21 @@ export default function AdminOrderDetailPage() {
     }
   };
 
-  if (loading) return <AdminLayout><div className={styles.container}><p>Загрузка заказа...</p></div></AdminLayout>;
+  // <-- Условный рендеринг для проверки доступа
+  if (isLoading || !user || !isAdmin) {
+    return (
+      <AdminLayout>
+        <div className={styles.container}>
+          <p style={{ textAlign: 'center', padding: '1rem' }}>
+            {isLoading ? 'Проверка доступа...' : 'У вас нет доступа к этой странице.'}
+          </p>
+        </div>
+      </AdminLayout>
+    );
+  }
+
+  // Остальная логика загрузки и ошибок
+  if (loadingOrder) return <AdminLayout><div className={styles.container}><p>Загрузка заказа...</p></div></AdminLayout>;
   if (error) return <AdminLayout><div className={styles.container}><p className={styles.error}>{error}</p></div></AdminLayout>;
   if (!order) return <AdminLayout><div className={styles.container}><p>Заказ не найден.</p></div></AdminLayout>;
 
@@ -122,7 +165,17 @@ export default function AdminOrderDetailPage() {
                   {comment.text && <p>{comment.text}</p>}
                   {comment.imageUrls && comment.imageUrls.length > 0 && (
                       <div className={styles.commentImages}>
-                          {comment.imageUrls.map((imgUrl, i) => <img key={i} src={imgUrl} alt={`Изображение ${i+1}`} className={styles.commentImage} />)}
+                          {comment.imageUrls.map((imgUrl, i) => (
+                            <Image 
+                              key={i} 
+                              src={imgUrl}  
+                              alt={`Изображение ${i+1}`}  
+                              width={200} 
+                              height={150} 
+                              className={styles.commentImage}  
+                              style={{ objectFit: 'cover' }}
+                            />
+                          ))}               
                       </div>
                   )}
                   <span className={styles.chatTimestamp}>{new Date(comment.createdAt).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</span>
@@ -135,9 +188,6 @@ export default function AdminOrderDetailPage() {
             <button onClick={handleAddComment} className={styles.button} disabled={isSubmitting}>
               {isSubmitting ? 'Отправка...' : 'Добавить комментарий'}
             </button>
-          </div>
-          <div className={`${styles.card} ${styles.fullWidth}`}>
-            {/* ... Блок "Детали заказа" остается без изменений ... */}
           </div>
         </div>
       </div>

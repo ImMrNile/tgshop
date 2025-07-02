@@ -1,141 +1,162 @@
-// pages/api/checkout.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../lib/prisma';
-import { DeliveryService, PaymentMethod, OrderStatus } from '@prisma/client';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { processReferralEarning } from '../../lib/referralUtils'; 
+import { OrderStatus, PaymentMethod, DeliveryService } from '@prisma/client'; 
+import { sendTelegramNotification } from '../../lib/telegram-notifier'; 
 
-// Вспомогательная функция для проверки, что значение является допустимым для Enum
-function isValidEnumValue<T extends object>(enumObject: T, value: unknown): value is T[keyof T] {
-  return Object.values(enumObject).includes(value as T[keyof T]);
+// Define the shape of cart items
+interface CartItem {
+  productId: string;
+  variantId: string;
+  quantity: number;
+  product: {
+    name: string;
+    currentPrice: string;
+    costPrice: string;
+  };
+  variant: {
+    size: string;
+    color?: string;
+  };
+}
+
+// Define the shape of delivery details from the request
+interface DeliveryDetailsInput { 
+  type: DeliveryService;
+  fullName: string;
+  phoneNumber: string;
+  address: string;
+  city: string;
+  region: string | null;
+  postalCode: string | null; // This is string | null in your interface
+  country: string;
+  saveAddress: boolean;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
+  const { cart, deliveryDetails, paymentMethod, userId, agreedToPolicy }: {
+    cart: CartItem[];
+    deliveryDetails: DeliveryDetailsInput; 
+    paymentMethod: PaymentMethod; 
+    userId: string;
+    agreedToPolicy: boolean;
+  } = req.body;
+
+  if (!cart || cart.length === 0) {
+    return res.status(400).json({ message: 'Cart is empty.' });
+  }
+  if (!deliveryDetails) {
+    return res.status(400).json({ message: 'Delivery details are required.' });
+  }
+  if (!paymentMethod) {
+    return res.status(400).json({ message: 'Payment method is required.' });
+  }
+  if (!userId) {
+    return res.status(401).json({ message: 'User ID is required for checkout.' });
+  }
+  if (!agreedToPolicy) {
+    return res.status(400).json({ message: 'Agreement to policy is required.' });
+  }
+
+  let totalAmount = 0;
+  let totalCostPrice = 0; 
+  let profit = 0; 
+
+  for (const item of cart) {
+    const itemPrice = parseFloat(item.product.currentPrice);
+    const itemCostPrice = parseFloat(item.product.costPrice);
+    const quantity = item.quantity;
+
+    totalAmount += itemPrice * quantity;
+    totalCostPrice += itemCostPrice * quantity;
+  }
+
+  profit = totalAmount - totalCostPrice;
+
   try {
-    const {
-      cart,
-      deliveryDetails,
-      paymentMethod,
-      userId,
-      agreedToPolicy
-    } = req.body;
-
-    // --- Валидация входных данных ---
-    if (!cart || cart.length === 0) {
-      return res.status(400).json({ message: 'Корзина не может быть пустой.' });
-    }
-    if (!deliveryDetails || !deliveryDetails.fullName || !deliveryDetails.phoneNumber || !deliveryDetails.address) {
-      return res.status(400).json({ message: 'Необходимо указать полные данные для доставки.' });
-    }
-    if (!isValidEnumValue(DeliveryService, deliveryDetails.type)) {
-      return res.status(400).json({ message: 'Выбран неверный способ доставки.' });
-    }
-    if (!isValidEnumValue(PaymentMethod, paymentMethod)) {
-      return res.status(400).json({ message: 'Выбран неверный способ оплаты.' });
-    }
-    if (agreedToPolicy !== true) {
-      return res.status(400).json({ message: 'Необходимо согласиться с политикой невозвратности товара.' });
-    }
-    
-    const tempUserId = userId || '2138182633';
-
-    // --- Логика создания заказа ---
-
-    // 1. Получаем данные пользователя из БД, чтобы узнать его скидку
     const user = await prisma.user.findUnique({
-      where: { id: tempUserId },
-      select: { personalDiscount: true },
+      where: { id: userId },
+      select: { telegramId: true, firstName: true, lastName: true, username: true }
     });
-    const personalDiscount = user?.personalDiscount ? parseFloat(user.personalDiscount.toString()) : 0;
 
-    // 2. Рассчитываем общую сумму товаров (субтотал)
-    let subTotal = 0;
-    const orderItemsData = [];
-
-    for (const item of cart) {
-        const product = await prisma.product.findUnique({
-            where: { id: item.product.id },
-            include: { variants: true }
-        });
-
-        if (!product) {
-            return res.status(404).json({ message: `Товар с ID ${item.product.id} не найден.`});
-        }
-
-        const variant = product.variants.find(v => v.id === item.variant.id);
-        if (!variant || variant.stock < item.quantity) {
-             return res.status(400).json({ message: `Вариант товара "${product.name}" закончился на складе.`});
-        }
-
-        const price = parseFloat(product.currentPrice.toString());
-        subTotal += price * item.quantity;
-
-        orderItemsData.push({
-            productId: product.id,
-            productName: product.name,
-            productPrice: price,
-            productCostPrice: parseFloat(product.costPrice.toString()),
-            productVariantId: variant.id,
-            quantity: item.quantity
-        });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
     }
 
-    // 3. Применяем персональную скидку к субтоталу
-    const discountAmount = subTotal * (personalDiscount / 100);
-    const finalTotalAmount = subTotal - discountAmount;
-
-    // 4. Создаем заказ в базе данных с финальной суммой
-    const newOrder = await prisma.order.create({
+    const order = await prisma.order.create({
       data: {
-        userId: tempUserId,
+        userId: userId,
         deliveryType: deliveryDetails.type,
         deliveryAddress: deliveryDetails.address,
-        deliveryPostalCode: deliveryDetails.postalCode,
+        deliveryPostalCode: deliveryDetails.postalCode || '', // Keep as string
         deliveryCountry: deliveryDetails.country,
         deliveryCity: deliveryDetails.city,
         deliveryRegion: deliveryDetails.region || null,
         deliveryPhoneNumber: deliveryDetails.phoneNumber,
         deliveryFullName: deliveryDetails.fullName,
-        totalAmount: finalTotalAmount, // <-- Сохраняем итоговую сумму с учетом скидки
+        totalAmount: totalAmount,
         status: OrderStatus.PENDING,
         paymentMethod: paymentMethod,
+        profit: profit,
         items: {
-          create: orderItemsData,
+          create: cart.map((item: CartItem) => ({
+            productId: item.productId,
+            productVariantId: item.variantId,
+            productName: item.product.name,
+            productPrice: parseFloat(item.product.currentPrice),
+            productCostPrice: parseFloat(item.product.costPrice),
+            quantity: item.quantity,
+          })),
         },
-      },
-      include: {
-        items: true,
       },
     });
 
-    // 5. (Опционально) Сохраняем адрес доставки для пользователя
-    if (deliveryDetails.saveAddress && deliveryDetails.address) {
-      const { saveAddress, ...detailsToSave } = deliveryDetails;
-      const existingAddress = await prisma.deliveryDetail.findFirst({
+    // Optionally save delivery address if requested
+    if (deliveryDetails.saveAddress) {
+      const existingAddress = await prisma.deliveryDetail.findUnique({
         where: {
-          userId: tempUserId,
-          address: detailsToSave.address,
-        },
+          userId_address: {
+            userId: userId,
+            address: deliveryDetails.address
+          }
+        }
       });
+
       if (!existingAddress) {
         await prisma.deliveryDetail.create({
           data: {
-            ...detailsToSave,
-            userId: tempUserId,
-            isDefault: false,
-          },
+            userId: userId,
+            type: deliveryDetails.type,
+            fullName: deliveryDetails.fullName,
+            phoneNumber: deliveryDetails.phoneNumber,
+            address: deliveryDetails.address,
+            city: deliveryDetails.city,
+            region: deliveryDetails.region || null,
+            // ИСПРАВЛЕНИЕ: postalCode должен быть строкой, не null. Используем '' если null
+            postalCode: deliveryDetails.postalCode || '', 
+            country: deliveryDetails.country,
+            isDefault: false 
+          }
         });
       }
     }
 
-    res.status(201).json({ message: 'Заказ успешно создан!', order: newOrder });
+    if (user.telegramId && process.env.VERCEL_APP_URL) {
+      const orderConfirmationMessage = `✅ Ваш заказ №${order.id.substring(0, 8).toUpperCase()} успешно создан!
+Мы свяжемся с вами для уточнения деталей.
 
+[Посмотреть детали заказа](${process.env.VERCEL_APP_URL}/orders/${order.id})`;
+      await sendTelegramNotification(user.telegramId, orderConfirmationMessage, { parse_mode: 'MarkdownV2' });
+    }
+
+    res.status(201).json({ message: 'Order created successfully!', orderId: order.id, order });
   } catch (error: unknown) {
-    console.error('Ошибка при создании заказа:', error);
-    const message = error instanceof Error ? error.message : 'Внутренняя ошибка сервера.';
-    res.status(500).json({ message });
+    console.error('Error during checkout:', error);
+    res.status(500).json({ message: error instanceof Error ? error.message : 'Failed to create order.' });
   }
 }

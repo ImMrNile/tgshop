@@ -1,35 +1,37 @@
-// pages/api/orders/[id]/comments.ts
+// pages/api/admin/orders/[id]/comments.ts (пример)
 import type { NextApiRequest, NextApiResponse } from 'next';
 import prisma from '../../../../lib/prisma';
-import { Role } from '@prisma/client';
+import { notifyNewManagerMessage } from '../../../../lib/telegram-notifier'; // Импортируем нотификатор
+import { Role } from '@prisma/client'; // Импортируем роль
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+    return res.status(405).json({ message: 'Method not allowed' });
   }
 
-  // В будущем здесь нужно будет получать ID пользователя из сессии
-  // и проверять, что он является владельцем этого заказа.
-  // const userId = getUserIdFromSession(req);
+  const { id } = req.query; // ID заказа
+  const { text, imageUrls, authorRole } = req.body; // Текст сообщения, изображения
 
-  const { id: orderId } = req.query;
-  const { text } = req.body;
-
-  if (typeof orderId !== 'string' || !text || text.trim() === '') {
-    return res.status(400).json({ message: 'Отсутствует ID заказа или текст комментария.' });
-  }
+  // ... (Проверка авторизации админа) ...
 
   try {
-    const comment = await prisma.comment.create({
+    const newComment = await prisma.comment.create({
       data: {
-        text,
-        orderId,
-        authorRole: Role.USER, // <-- Указываем, что автор - Пользователь
-      },
+        orderId: String(id),
+        text: text,
+        imageUrls: imageUrls || [],
+        authorRole: authorRole, // Убедитесь, что это ADMIN
+      }
     });
-    res.status(201).json(comment);
+
+    // Отправляем уведомление пользователю, если это сообщение от админа
+    if (authorRole === Role.ADMIN) {
+        await notifyNewManagerMessage(String(id), text);
+    }
+
+    res.status(201).json(newComment);
   } catch (error) {
-    console.error(`Ошибка при добавлении комментария от пользователя к заказу ${orderId}:`, error);
-    res.status(500).json({ message: 'Не удалось добавить комментарий' });
+    console.error('Error adding comment:', error);
+    res.status(500).json({ message: 'Failed to add comment.' });
   }
 }

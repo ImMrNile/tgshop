@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import AdminLayout from '../../components/AdminLayout';
 import styles from '../../styles/AdminOrders.module.css';
-import { Order, OrderStatus } from '@prisma/client';
+import { Order, OrderStatus } from '@prisma/client'; // Импортируем Order и OrderStatus
+import { useAuth } from '../../components/AuthProvider'; // Импортируем useAuth
 
 type OrderWithUser = Order & {
   user: {
@@ -17,26 +18,41 @@ const orderStatusRussianNames: Record<OrderStatus, string> = { PENDING: 'В ож
 
 export default function AdminOrdersPage() {
   const router = useRouter();
+  const { user, isLoading, isAdmin } = useAuth(); // Получаем user, isLoading и isAdmin из контекста
   const [orders, setOrders] = useState<OrderWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchOrders = useCallback(async (query: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const cleanQuery = query.startsWith('#') ? query.substring(1) : query;
-      const res = await fetch(`/api/admin/orders?search=${encodeURIComponent(cleanQuery)}`);
-      if (!res.ok) throw new Error('Не удалось загрузить заказы');
-      const data = await res.json();
-      setOrders(data);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Произошла ошибка');
-    } finally {
-      setLoading(false);
+  // Добавляем useEffect для проверки аутентификации и админ-статуса
+  useEffect(() => {
+    if (isLoading) {
+      return; // Ждем завершения загрузки аутентификации
     }
-  }, []);
+    if (!user || !isAdmin) {
+      router.push('/login'); // Или другая страница для неавторизованных/неадминов
+    }
+  }, [user, isLoading, isAdmin, router]);
+
+  // fetchOrders теперь принимает только searchTerm
+  const fetchOrders = useCallback(async (query: string) => {
+    // Выполняем запрос только если пользователь является админом и аутентификация завершена
+    if (!isLoading && isAdmin) { // Эта проверка уже есть в useEffect, но лучше дублировать и здесь
+      setLoading(true);
+      setError(null);
+      try {
+        // Убрали userId из запроса, теперь админ может видеть все заказы
+        const res = await fetch(`/api/admin/orders?search=${encodeURIComponent(query)}`); 
+        if (!res.ok) throw new Error('Не удалось загрузить заказы');
+        const data = await res.json();
+        setOrders(data);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Произошла ошибка');
+      } finally {
+        setLoading(false);
+      }
+    }
+  }, [isLoading, isAdmin]); // Зависимости: isLoading, isAdmin
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
